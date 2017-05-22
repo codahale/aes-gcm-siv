@@ -58,12 +58,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <version>3.0.2</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <groupId>com.squareup.okio</groupId>
       <artifactId>okio</artifactId>
       <version>1.13.0</version>
