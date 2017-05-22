@@ -2,7 +2,8 @@
 
 [![Build Status](https://secure.travis-ci.org/codahale/aes-gcm-siv.svg)](http://travis-ci.org/codahale/aes-gcm-siv)
 
-A Java implementation of [AES-GCM-SIV](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-04).
+A Java implementation of [AES-GCM-SIV](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-04), a
+nonce misuse-resistant Authenticated Encryption And Data (AEAD) algorithm.
 
 ## Add to your project
 
