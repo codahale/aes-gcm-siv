@@ -17,7 +17,8 @@ package com.codahale.aesgcmsiv;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Optional;
-import javax.annotation.Nullable;
+import okio.Buffer;
+import okio.ByteString;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.modes.gcm.GCMMultiplier;
 import org.bouncycastle.crypto.modes.gcm.GCMUtil;
@@ -27,71 +28,61 @@ import org.bouncycastle.util.Pack;
 
 public class AEAD {
 
-  private static final byte[] EMPTY = new byte[0];
-  private final byte[] key;
+  private final ByteString key;
 
-  public AEAD(byte[] key) {
-    if (key.length != 16 && key.length != 32) {
+  public AEAD(ByteString key) {
+    if (key.size() != 16 && key.size() != 32) {
       throw new IllegalArgumentException("Key must be 16 or 32 bytes long");
     }
-    this.key = Arrays.copyOf(key, key.length);
+    this.key = key;
   }
 
-  public byte[] seal(byte[] nonce, byte[] plaintext, @Nullable byte[] data) {
-    if (nonce.length != 12) {
+  public ByteString seal(ByteString nonce, ByteString plaintext, ByteString data) {
+    if (nonce.size() != 12) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
     }
 
-    if (data == null) {
-      data = EMPTY;
-    }
-
-    final byte[] authKey = subKey(key, 0, 1, nonce);
-    final byte[] encKey = subKey(key, 2, key.length == 16 ? 3 : 5, nonce);
-
-    final byte[] hash = polyval(authKey, padWithLengths(plaintext, data));
-    for (int i = 0; i < nonce.length; i++) {
-      hash[i] ^= nonce[i];
+    final byte[] n = nonce.toByteArray();
+    final byte[] p = plaintext.toByteArray();
+    final byte[] d = data.toByteArray();
+    final byte[] key = this.key.toByteArray();
+    final byte[] authKey = subKey(key, 0, 1, n);
+    final byte[] encKey = subKey(key, 2, key.length == 16 ? 3 : 5, n);
+    final byte[] hash = polyval(authKey, padWithLengths(p, d));
+    for (int i = 0; i < n.length; i++) {
+      hash[i] ^= n[i];
     }
     hash[hash.length - 1] &= ~0x80;
     final byte[] tag = aesECB(encKey, hash);
     final byte[] ctr = convertTag(tag);
-
-    final byte[] ciphertext = aesCTR(encKey, ctr, plaintext);
-    final byte[] out = new byte[ciphertext.length + tag.length];
-    System.arraycopy(ciphertext, 0, out, 0, ciphertext.length);
-    System.arraycopy(tag, 0, out, ciphertext.length, tag.length);
-    return out;
+    final byte[] ciphertext = aesCTR(encKey, ctr, p);
+    return new Buffer().write(ciphertext).write(tag).readByteString();
   }
 
-  public Optional<byte[]> open(byte[] nonce, byte[] ciphertext, @Nullable byte[] data) {
-    if (nonce.length != 12) {
+  public Optional<ByteString> open(ByteString nonce, ByteString ciphertext, ByteString data) {
+    if (nonce.size() != 12) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
     }
 
-    if (data == null) {
-      data = EMPTY;
-    }
-
-    final byte[] authKey = subKey(key, 0, 1, nonce);
-    final byte[] encKey = subKey(key, 2, key.length == 16 ? 3 : 5, nonce);
-
-    final byte[] tag = Arrays
-        .copyOfRange(ciphertext, ciphertext.length - 16, ciphertext.length);
-    ciphertext = Arrays.copyOf(ciphertext, ciphertext.length - tag.length);
-
+    final byte[] n = nonce.toByteArray();
+    final byte[] c = ciphertext.substring(0, ciphertext.size() - 16).toByteArray();
+    final byte[] d = data.toByteArray();
+    final byte[] key = this.key.toByteArray();
+    final byte[] authKey = subKey(key, 0, 1, n);
+    final byte[] encKey = subKey(key, 2, key.length == 16 ? 3 : 5, n);
+    final byte[] tag = ciphertext.substring(c.length, ciphertext.size()).toByteArray();
     final byte[] ctr = convertTag(tag);
-    final byte[] plaintext = aesCTR(encKey, ctr, ciphertext);
+    final byte[] plaintext = aesCTR(encKey, ctr, c);
 
-    final byte[] hash = polyval(authKey, padWithLengths(plaintext, data));
-    for (int i = 0; i < nonce.length; i++) {
-      hash[i] ^= nonce[i];
+    final byte[] hash = polyval(authKey, padWithLengths(plaintext, d));
+    for (int i = 0; i < n.length; i++) {
+      hash[i] ^= n[i];
     }
     hash[hash.length - 1] &= ~0x80;
     final byte[] actual = aesECB(encKey, hash);
 
     if (MessageDigest.isEqual(tag, actual)) {
-      return Optional.of(plaintext);
+      return Optional.of(ByteString.of(plaintext));
     }
     return Optional.empty();
   }
@@ -144,23 +135,19 @@ public class AEAD {
     final byte[] in = new byte[16];
     System.arraycopy(nonce, 0, in, in.length - nonce.length, nonce.length);
     final byte[] out = new byte[(ctrEnd - ctrStart + 1) * 8];
-
     for (int ctr = ctrStart; ctr <= ctrEnd; ctr++) {
       Pack.intToLittleEndian(ctr, in, 0);
       final byte[] x = aesECB(key, in);
       System.arraycopy(x, 0, out, (ctr - ctrStart) * 8, 8);
     }
-
     return out;
   }
 
   private byte[] aesECB(byte[] key, byte[] input) {
     final AESEngine aes = new AESEngine();
     aes.init(true, new KeyParameter(key));
-
     final byte[] out = new byte[input.length];
     aes.processBlock(input, 0, out, 0);
-
     return out;
   }
 

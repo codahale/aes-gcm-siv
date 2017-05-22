@@ -24,15 +24,15 @@ import java.util.Optional;
 
 class Example {
   void doIt() {
-    final byte[] key = ByteString.decodeHex("ee8e1ed9ff2540ae8f2ba9f50bc2f27c").toByteArray();
-    final byte[] nonce = ByteString.decodeHex("752abad3e0afb5f434dc4310").toByteArray();
-    final byte[] plaintext = ByteString.encodeUtf8("Hello world").toByteArray();
-    final byte[] data = ByteString.encodeUtf8("example").toByteArray();
+    final ByteString key = ByteString.decodeHex("ee8e1ed9ff2540ae8f2ba9f50bc2f27c");
+    final ByteString nonce = ByteString.decodeHex("752abad3e0afb5f434dc4310");
+    final ByteString plaintext = ByteString.encodeUtf8("Hello world");
+    final ByteString data = ByteString.encodeUtf8("example");
     
-    final byte[] ciphertext = aead.seal(nonce, plaintext, data);
-    final Optional<byte[]> result = aead.open(nonce, ciphertext, data);
+    final ByteString ciphertext = aead.seal(nonce, plaintext, data);
+    final Optional<ByteString> result = aead.open(nonce, ciphertext, data);
 
-    System.out.println(result.map(ByteString::of));
+    System.out.println(result);
   } 
 }
 ```

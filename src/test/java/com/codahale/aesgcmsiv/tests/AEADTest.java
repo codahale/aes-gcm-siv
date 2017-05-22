@@ -14,7 +14,6 @@
 
 package com.codahale.aesgcmsiv.tests;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -45,31 +44,31 @@ class AEADTest {
       final ByteString data = ByteString.decodeHex(vector[3]);
       final ByteString ciphertext = ByteString.decodeHex(vector[4]);
 
-      final AEAD aead = new AEAD(key.toByteArray());
-      final byte[] c = aead.seal(nonce.toByteArray(), plaintext.toByteArray(), data.toByteArray());
-      assertEquals(ciphertext, ByteString.of(c));
+      final AEAD aead = new AEAD(key);
+      final ByteString c = aead.seal(nonce, plaintext, data);
+      assertEquals(ciphertext, c);
 
-      final Optional<byte[]> p = aead.open(nonce.toByteArray(), c, data.toByteArray());
+      final Optional<ByteString> p = aead.open(nonce, c, data);
       assertTrue(p.isPresent());
-      assertEquals(plaintext, ByteString.of(p.get()));
+      assertEquals(plaintext, p.get());
     }
   }
 
   @Test
   void exampleRoundTrip() throws Exception {
-    final byte[] key = ByteString.decodeHex("ee8e1ed9ff2540ae8f2ba9f50bc2f27c").toByteArray();
-    final byte[] nonce = ByteString.decodeHex("752abad3e0afb5f434dc4310").toByteArray();
-    final byte[] plaintext = ByteString.encodeUtf8("Hello world").toByteArray();
-    final byte[] data = ByteString.encodeUtf8("example").toByteArray();
+    final ByteString key = ByteString.decodeHex("ee8e1ed9ff2540ae8f2ba9f50bc2f27c");
+    final ByteString nonce = ByteString.decodeHex("752abad3e0afb5f434dc4310");
+    final ByteString plaintext = ByteString.encodeUtf8("Hello world");
+    final ByteString data = ByteString.encodeUtf8("example");
 
     final AEAD aead = new AEAD(key);
-    final byte[] ciphertext = aead.seal(nonce, plaintext, data);
+    final ByteString ciphertext = aead.seal(nonce, plaintext, data);
 
     assertEquals(ByteString.decodeHex("5d349ead175ef6b1def6fd4fbcdeb7e4793f4a1d7e4faa70100af1"),
-        ByteString.of(ciphertext));
+        ciphertext);
 
-    final Optional<byte[]> end = aead.open(nonce, ciphertext, data);
-
-    assertArrayEquals(plaintext, end.orElseThrow(NullPointerException::new));
+    final Optional<ByteString> p = aead.open(nonce, ciphertext, data);
+    assertTrue(p.isPresent());
+    assertEquals(plaintext, p.get());
   }
 }
