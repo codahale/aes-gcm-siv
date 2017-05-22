@@ -14,21 +14,15 @@
 
 package com.codahale.aesgcmsiv;
 
-import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.SecretKeySpec;
+import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.modes.gcm.GCMMultiplier;
 import org.bouncycastle.crypto.modes.gcm.GCMUtil;
 import org.bouncycastle.crypto.modes.gcm.Tables8kGCMMultiplier;
+import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.util.Pack;
 
 public class AEAD {
@@ -161,34 +155,28 @@ public class AEAD {
   }
 
   private byte[] aesECB(byte[] key, byte[] input) {
-    try {
-      final SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
-      final Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
-      cipher.init(Cipher.ENCRYPT_MODE, keySpec);
-      return cipher.doFinal(input);
-    } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
-      throw new RuntimeException(e);
-    }
+    final AESEngine aes = new AESEngine();
+    aes.init(true, new KeyParameter(key));
+
+    final byte[] out = new byte[input.length];
+    aes.processBlock(input, 0, out, 0);
+
+    return out;
   }
 
   private byte[] aesCTR(byte[] key, byte[] counter, byte[] input) {
-    try {
-      final SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
-      final Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
-      cipher.init(Cipher.ENCRYPT_MODE, keySpec);
-
-      long ctr = Integer.toUnsignedLong(Pack.littleEndianToInt(counter, 0));
-      final byte[] out = new byte[input.length];
-      for (int i = 0; i < input.length; i += 16) {
-        final byte[] k = cipher.doFinal(counter);
-        final int len = Math.min(16, input.length - i);
-        GCMUtil.xor(k, input, i, len);
-        System.arraycopy(k, 0, out, i, len);
-        Pack.intToLittleEndian((int) ++ctr, counter, 0);
-      }
-      return out;
-    } catch (GeneralSecurityException e) {
-      throw new RuntimeException(e);
+    final AESEngine aes = new AESEngine();
+    aes.init(true, new KeyParameter(key));
+    final byte[] out = new byte[input.length];
+    long ctr = Integer.toUnsignedLong(Pack.littleEndianToInt(counter, 0));
+    final byte[] k = new byte[aes.getBlockSize()];
+    for (int i = 0; i < input.length; i += 16) {
+      aes.processBlock(counter, 0, k, 0);
+      final int len = Math.min(16, input.length - i);
+      GCMUtil.xor(k, input, i, len);
+      System.arraycopy(k, 0, out, i, len);
+      Pack.intToLittleEndian((int) ++ctr, counter, 0);
     }
+    return out;
   }
 }
