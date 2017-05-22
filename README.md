@@ -28,7 +28,8 @@ class Example {
     final ByteString nonce = ByteString.decodeHex("752abad3e0afb5f434dc4310");
     final ByteString plaintext = ByteString.encodeUtf8("Hello world");
     final ByteString data = ByteString.encodeUtf8("example");
-    
+   
+    final AEAD aead = new AEAD(key);
     final ByteString ciphertext = aead.seal(nonce, plaintext, data);
     final Optional<ByteString> result = aead.open(nonce, ciphertext, data);
 
