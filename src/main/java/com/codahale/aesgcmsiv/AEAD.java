@@ -67,14 +67,11 @@ public class AEAD {
     final byte[] key = this.key.toByteArray();
     final byte[] authKey = subKey(key, 0, 1, n);
     final byte[] encKey = subKey(key, 2, key.length == 16 ? 3 : 5, n);
-    final byte[] hash = polyval(authKey, p, d);
-    for (int i = 0; i < n.length; i++) {
-      hash[i] ^= n[i];
-    }
-    hash[hash.length - 1] &= ~0x80;
+    final byte[] hash = polyval(authKey, n, p, d);
     final byte[] tag = aesECB(encKey, hash);
     final byte[] ctr = convertTag(tag);
     final byte[] ciphertext = aesCTR(encKey, ctr, p);
+
     return new Buffer().write(ciphertext).write(tag).readByteString();
   }
 
@@ -100,12 +97,7 @@ public class AEAD {
     final byte[] tag = ciphertext.substring(c.length, ciphertext.size()).toByteArray();
     final byte[] ctr = convertTag(tag);
     final byte[] plaintext = aesCTR(encKey, ctr, c);
-
-    final byte[] hash = polyval(authKey, plaintext, d);
-    for (int i = 0; i < n.length; i++) {
-      hash[i] ^= n[i];
-    }
-    hash[hash.length - 1] &= ~0x80;
+    final byte[] hash = polyval(authKey, n, plaintext, d);
     final byte[] actual = aesECB(encKey, hash);
 
     if (MessageDigest.isEqual(tag, actual)) {
@@ -120,18 +112,24 @@ public class AEAD {
     return ctr;
   }
 
-  private byte[] polyval(byte[] h, byte[] plaintext, byte[] data) {
-    final byte[] x = aeadBlock(plaintext, data);
+  private byte[] polyval(byte[] h, byte[] nonce, byte[] plaintext, byte[] data) {
     final GCMMultiplier multiplier = new Tables8kGCMMultiplier();
     multiplier.init(mulX_GHASH(h));
 
     final byte[] s = new byte[16];
+    final byte[] x = aeadBlock(plaintext, data);
     for (int i = 0; i < x.length; i += s.length) {
       final byte[] in = reverse(Arrays.copyOfRange(x, i, i + s.length));
       GCMUtil.xor(s, in);
       multiplier.multiplyH(s);
     }
-    return reverse(s);
+
+    final byte[] hash = reverse(s);
+    for (int i = 0; i < nonce.length; i++) {
+      hash[i] ^= nonce[i];
+    }
+    hash[hash.length - 1] &= ~0x80;
+    return hash;
   }
 
   private byte[] mulX_GHASH(byte[] x) {
