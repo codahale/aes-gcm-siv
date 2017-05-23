@@ -34,16 +34,6 @@ import org.bouncycastle.util.Pack;
  */
 public class AEAD {
 
-  /**
-   * The length of AES-GCM-SIV nonces, in bytes.
-   */
-  public static final int NONCE_SIZE = 12;
-
-  /**
-   * The length of AES-GCM-SIV tags, in bytes.
-   */
-  public static final int TAG_SIZE = 16;
-
   private final ByteString key;
 
   /**
@@ -67,7 +57,7 @@ public class AEAD {
    * @return the encrypted message
    */
   public ByteString seal(ByteString nonce, ByteString plaintext, ByteString data) {
-    if (nonce.size() != NONCE_SIZE) {
+    if (nonce.size() != 12) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
     }
 
@@ -97,17 +87,17 @@ public class AEAD {
    * @return the plaintext message
    */
   public Optional<ByteString> open(ByteString nonce, ByteString ciphertext, ByteString data) {
-    if (nonce.size() != NONCE_SIZE) {
+    if (nonce.size() != 12) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
     }
 
     final byte[] n = nonce.toByteArray();
-    final byte[] c = ciphertext.substring(0, ciphertext.size() - TAG_SIZE).toByteArray();
-    final byte[] tag = ciphertext.substring(c.length, ciphertext.size()).toByteArray();
+    final byte[] c = ciphertext.substring(0, ciphertext.size() - 16).toByteArray();
     final byte[] d = data.toByteArray();
     final byte[] key = this.key.toByteArray();
     final byte[] authKey = subKey(key, 0, 1, n);
-    final byte[] encKey = subKey(key, 2, key.length == TAG_SIZE ? 3 : 5, n);
+    final byte[] encKey = subKey(key, 2, key.length == 16 ? 3 : 5, n);
+    final byte[] tag = ciphertext.substring(c.length, ciphertext.size()).toByteArray();
     final byte[] ctr = convertTag(tag);
     final byte[] plaintext = aesCTR(encKey, ctr, c);
 
@@ -135,7 +125,7 @@ public class AEAD {
     final GCMMultiplier multiplier = new Tables8kGCMMultiplier();
     multiplier.init(mulX_GHASH(h));
 
-    final byte[] s = new byte[TAG_SIZE];
+    final byte[] s = new byte[16];
     for (int i = 0; i < x.length; i += s.length) {
       final byte[] in = reverse(Arrays.copyOfRange(x, i, i + s.length));
       GCMUtil.xor(s, in);
@@ -159,20 +149,20 @@ public class AEAD {
   }
 
   private byte[] aeadBlock(byte[] plaintext, byte[] data) {
-    final int plaintextPad = (TAG_SIZE - (plaintext.length % TAG_SIZE)) % TAG_SIZE;
-    final int dataPad = (TAG_SIZE - (data.length % TAG_SIZE)) % TAG_SIZE;
+    final int plaintextPad = (16 - (plaintext.length % 16)) % 16;
+    final int dataPad = (16 - (data.length % 16)) % 16;
     final byte[] out = new byte[8 + 8 + plaintext.length + plaintextPad + data.length + dataPad];
     System.arraycopy(data, 0, out, 0, data.length);
     System.arraycopy(plaintext, 0, out, data.length + dataPad, plaintext.length);
-    Pack.intToLittleEndian(data.length * 8, out, out.length - TAG_SIZE);
+    Pack.intToLittleEndian(data.length * 8, out, out.length - 16);
     Pack.intToLittleEndian(plaintext.length * 8, out, out.length - 8);
     return out;
   }
 
   private byte[] subKey(byte[] key, int ctrStart, int ctrEnd, byte[] nonce) {
-    final byte[] in = new byte[TAG_SIZE];
+    final byte[] in = new byte[16];
     System.arraycopy(nonce, 0, in, in.length - nonce.length, nonce.length);
-    final byte[] out = new byte[(ctrEnd - ctrStart + 1) * (TAG_SIZE / 2)];
+    final byte[] out = new byte[(ctrEnd - ctrStart + 1) * 8];
     for (int ctr = ctrStart; ctr <= ctrEnd; ctr++) {
       Pack.intToLittleEndian(ctr, in, 0);
       final byte[] x = aesECB(key, in);
@@ -195,9 +185,9 @@ public class AEAD {
     final byte[] out = new byte[input.length];
     long ctr = Pack.littleEndianToInt(counter, 0);
     final byte[] k = new byte[aes.getBlockSize()];
-    for (int i = 0; i < input.length; i += TAG_SIZE) {
+    for (int i = 0; i < input.length; i += 16) {
       aes.processBlock(counter, 0, k, 0);
-      final int len = Math.min(TAG_SIZE, input.length - i);
+      final int len = Math.min(16, input.length - i);
       GCMUtil.xor(k, input, i, len);
       System.arraycopy(k, 0, out, i, len);
       Pack.intToLittleEndian((int) ++ctr, counter, 0);

@@ -51,7 +51,7 @@ class AEADTest {
                                             .collect(Collectors.toList());
     for (String[] vector : vectors) {
       final ByteString key = ByteString.decodeHex(vector[0]);
-      final ByteString nonce = ByteString.decodeHex(vector[1].substring(0, AEAD.NONCE_SIZE * 2));
+      final ByteString nonce = ByteString.decodeHex(vector[1].substring(0, 24));
       final ByteString plaintext = ByteString.decodeHex(vector[2]);
       final ByteString data = ByteString.decodeHex(vector[3]);
       final ByteString ciphertext = ByteString.decodeHex(vector[4]);
@@ -86,14 +86,14 @@ class AEADTest {
 
   @Test
   void roundTrip() throws Exception {
-    qt().forAll(byteStrings(16, 16), byteStrings(12, 12), byteStrings(0, 256), byteStrings(0, 256))
+    qt().forAll(byteStrings(16, 16), byteStrings(12, 12), byteStrings(0, 1024),
+        byteStrings(0, 1024))
         .check((key, nonce, plaintext, data) -> {
           final AEAD aead = new AEAD(key);
           final ByteString ciphertext = aead.seal(nonce, plaintext, data);
           final Optional<ByteString> message = aead.open(nonce, ciphertext, data);
 
-          return message.isPresent() && plaintext.equals(message.get())
-              && message.get().size() == plaintext.size() + AEAD.TAG_SIZE;
+          return message.isPresent() && plaintext.equals(message.get());
         });
   }
 }
