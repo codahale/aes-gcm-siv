@@ -12,6 +12,14 @@ No, AES-GCM-SIV is still in draft form and hasn't yet been standardized. This li
 algorithm described in
 [draft-irtf-cfrg-gcmsiv-04](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-04).
 
+## Is it fast
+
+Well, no. AES-GCM-SIV's performance is largely dependent on hardware support for AES and GCM, but
+the Java Virtual Machine intrinsics for AES-NI and GCM are not available for general use. Java 8
+added AES-NI support, but only for AES-CBC, and Java 9 will improve GCM performance via `pclmulqdq`
+intrinsics, but only for AES-GCM. Still, things are plenty fast — encrypting a 1KiB message takes
+about 40-50µs on my laptop.
+
 ## Add to your project
 
 ```xml
