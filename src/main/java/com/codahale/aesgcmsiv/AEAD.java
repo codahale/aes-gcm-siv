@@ -67,7 +67,7 @@ public class AEAD {
     final byte[] key = this.key.toByteArray();
     final byte[] authKey = subKey(key, 0, 1, n);
     final byte[] encKey = subKey(key, 2, key.length == 16 ? 3 : 5, n);
-    final byte[] hash = polyval(authKey, padWithLengths(p, d));
+    final byte[] hash = polyval(authKey, p, d);
     for (int i = 0; i < n.length; i++) {
       hash[i] ^= n[i];
     }
@@ -101,7 +101,7 @@ public class AEAD {
     final byte[] ctr = convertTag(tag);
     final byte[] plaintext = aesCTR(encKey, ctr, c);
 
-    final byte[] hash = polyval(authKey, padWithLengths(plaintext, d));
+    final byte[] hash = polyval(authKey, plaintext, d);
     for (int i = 0; i < n.length; i++) {
       hash[i] ^= n[i];
     }
@@ -120,7 +120,8 @@ public class AEAD {
     return ctr;
   }
 
-  private byte[] polyval(byte[] h, byte[] x) {
+  private byte[] polyval(byte[] h, byte[] plaintext, byte[] data) {
+    final byte[] x = aeadBlock(plaintext, data);
     final GCMMultiplier multiplier = new Tables8kGCMMultiplier();
     multiplier.init(mulX_GHASH(h));
 
@@ -147,7 +148,7 @@ public class AEAD {
     return out;
   }
 
-  private byte[] padWithLengths(byte[] plaintext, byte[] data) {
+  private byte[] aeadBlock(byte[] plaintext, byte[] data) {
     final int plaintextPad = (16 - (plaintext.length % 16)) % 16;
     final int dataPad = (16 - (data.length % 16)) % 16;
     final byte[] out = new byte[8 + 8 + plaintext.length + plaintextPad + data.length + dataPad];
