@@ -26,10 +26,22 @@ import org.bouncycastle.crypto.modes.gcm.Tables8kGCMMultiplier;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.util.Pack;
 
+/**
+ * An AES-GCM-SIV AEAD instance.
+ *
+ * @see <a href="https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-04">draft-irtf-cfrg-gcmsiv-04</a>
+ */
 public class AEAD {
 
   private final ByteString key;
 
+  /**
+   * Creates a new {@link AEAD} instance with the given key.
+   *
+   * @param key the secret key; must be 16 or 32 bytes long
+   * @see <a href="http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html">JCE
+   * Unlimited Strength Jurisdiction Policy Files</a>
+   */
   public AEAD(ByteString key) {
     if (key.size() != 16 && key.size() != 32) {
       throw new IllegalArgumentException("Key must be 16 or 32 bytes long");
@@ -37,6 +49,14 @@ public class AEAD {
     this.key = key;
   }
 
+  /**
+   * Encrypts the given plaintext.
+   *
+   * @param nonce a 12-byte random nonce
+   * @param plaintext a plaintext message (may be empty)
+   * @param data authenticated data (may be empty)
+   * @return the encrypted message
+   */
   public ByteString seal(ByteString nonce, ByteString plaintext, ByteString data) {
     if (nonce.size() != 12) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
@@ -59,6 +79,14 @@ public class AEAD {
     return new Buffer().write(ciphertext).write(tag).readByteString();
   }
 
+  /**
+   * Decrypts the given encrypted message.
+   *
+   * @param nonce the 12-byte random nonce used to encrypt the message
+   * @param ciphertext the returned value from {@link #seal(ByteString, ByteString, ByteString)}
+   * @param data the authenticated data used to encrypt the message (may be empty)
+   * @return the plaintext message
+   */
   public Optional<ByteString> open(ByteString nonce, ByteString ciphertext, ByteString data) {
     if (nonce.size() != 12) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
