@@ -39,8 +39,6 @@ public class AEAD {
    * Creates a new {@link AEAD} instance with the given key.
    *
    * @param key the secret key; must be 16 or 32 bytes long
-   * @see <a href="http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html">JCE
-   * Unlimited Strength Jurisdiction Policy Files</a>
    */
   public AEAD(ByteString key) {
     if (key.size() != 16 && key.size() != 32) {
@@ -183,7 +181,7 @@ public class AEAD {
     final AESEngine aes = new AESEngine();
     aes.init(true, new KeyParameter(key));
     final byte[] out = new byte[input.length];
-    long ctr = Integer.toUnsignedLong(Pack.littleEndianToInt(counter, 0));
+    long ctr = Pack.littleEndianToInt(counter, 0);
     final byte[] k = new byte[aes.getBlockSize()];
     for (int i = 0; i < input.length; i += 16) {
       aes.processBlock(counter, 0, k, 0);
