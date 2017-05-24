@@ -22,7 +22,7 @@
   <artifactId>aes-gcm-siv</artifactId>
   <version>0.1.1-SNAPSHOT</version>
 
-  <name>An implementation of AES-GCM-SIV</name>
+  <name>AES-GCM-SIV</name>
   <url>https://github.com/codahale/aes-gcm-siv</url>
   <description>
     An implementation of GCM-SIV mode for BouncyCastle.
