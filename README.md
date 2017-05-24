@@ -23,9 +23,9 @@ about 40-50µs on my laptop.
 ## Ok then why's it good
 
 AES-GCM-SIV is a nonce-misuse resistant AEAD, which means it doesn't fail catastrophically if a
-nonce gets re-used (e.g., your virtual machine runs out of entropy, or the value you're using as a
-nonce is not as unique as you think). AES-GCM-SIV can tolerate _some_ duplicate nonces, but it still
-has limits:
+nonce gets re-used (if uou have any questions about this, feel free to ask
+[@tqbf](https://twitter.com/tqbf) about it on Twitter). AES-GCM-SIV can tolerate _some_ duplicate
+nonces, but it still has limits:
 
 > When discussing this work, we found a widespread misunderstanding of the term “nonce-misuse
 resistant”. Many people appear to expect the security of a nonce-misuse resistant scheme to be
