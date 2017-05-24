@@ -15,6 +15,7 @@
 package com.codahale.aesgcmsiv;
 
 import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Optional;
 import okio.Buffer;
@@ -35,6 +36,7 @@ import org.bouncycastle.util.Pack;
 public class AEAD {
 
   private final ByteString key;
+  private final SecureRandom random;
 
   /**
    * Creates a new {@link AEAD} instance with the given key.
@@ -46,6 +48,7 @@ public class AEAD {
       throw new IllegalArgumentException("Key must be 16 or 32 bytes long");
     }
     this.key = key;
+    this.random = new SecureRandom();
   }
 
   /**
@@ -73,6 +76,23 @@ public class AEAD {
     final byte[] ciphertext = aesCTR(encKey, ctr, p);
 
     return new Buffer().write(ciphertext).write(tag).readByteString();
+  }
+
+  /**
+   * Encrypts the given plaintext, using a random nonce. Prepends the nonce to the resulting
+   * ciphertext.
+   *
+   * @param plaintext a plaintext message (may be empty)
+   * @param data authenticated data (may be empty)
+   * @return the random nonce and the encrypted message
+   */
+  public ByteString seal(ByteString plaintext, ByteString data) {
+    final byte[] nonce = new byte[12];
+    random.nextBytes(nonce);
+
+    return new Buffer().write(nonce)
+                       .write(seal(ByteString.of(nonce), plaintext, data))
+                       .readByteString();
   }
 
   /**
@@ -104,6 +124,20 @@ public class AEAD {
       return Optional.of(ByteString.of(plaintext));
     }
     return Optional.empty();
+  }
+
+  /**
+   * Decrypts the given encrypted message.
+   *
+   * @param ciphertext the returned value from {@link #seal(ByteString, ByteString)}
+   * @param data the authenticated data used to encrypt the message (may be empty)
+   * @return the plaintext message
+   */
+  public Optional<ByteString> open(ByteString ciphertext, ByteString data) {
+    if (ciphertext.size() < 12) {
+      return Optional.empty();
+    }
+    return open(ciphertext.substring(12).substring(0, 12), ciphertext.substring(12), data);
   }
 
   private byte[] convertTag(byte[] tag) {

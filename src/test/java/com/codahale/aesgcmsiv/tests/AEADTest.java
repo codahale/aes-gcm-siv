@@ -96,4 +96,16 @@ class AEADTest {
           return message.isPresent() && plaintext.equals(message.get());
         });
   }
+
+  @Test
+  void simpleRoundTrip() throws Exception {
+    qt().forAll(byteStrings(16, 16), byteStrings(0, 1024), byteStrings(0, 1024))
+        .check((key, plaintext, data) -> {
+          final AEAD aead = new AEAD(key);
+          final ByteString ciphertext = aead.seal(plaintext, data);
+          final Optional<ByteString> message = aead.open(ciphertext, data);
+
+          return message.isPresent() && plaintext.equals(message.get());
+        });
+  }
 }
