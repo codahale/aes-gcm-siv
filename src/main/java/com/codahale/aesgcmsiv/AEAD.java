@@ -137,7 +137,7 @@ public class AEAD {
     if (ciphertext.size() < 12) {
       return Optional.empty();
     }
-    return open(ciphertext.substring(12).substring(0, 12), ciphertext.substring(12), data);
+    return open(ciphertext.substring(0, 12), ciphertext.substring(12), data);
   }
 
   private byte[] convertTag(byte[] tag) {
