@@ -23,9 +23,16 @@ about 40-50µs on my laptop.
 ## Ok then why's it good
 
 AES-GCM-SIV is a nonce-misuse resistant AEAD, which means it doesn't fail catastrophically if a
-nonce gets re-used (if uou have any questions about this, feel free to ask
-[@tqbf](https://twitter.com/tqbf) about it on Twitter). AES-GCM-SIV can tolerate _some_ duplicate
-nonces, but it still has limits:
+nonce gets re-used. This is a concern for large systems which involve operations with a single key:
+
+> Since a central allocation system for nonces is not operationally viable, random selection of
+nonces is the only possibility. AES-GCM’s limit of 2^32 random nonces (per key) suggests that, even
+if the system rotated these secret keys daily, it could not issue more than about 50K tokens per
+second. However, in order to process DDoS attacks the system may need to sustain issuance of several
+hundred million per second.
+
+Unlike AES-GCM or ChaChaPoly1305, AES-GCM-SIV can tolerate _some_ duplicate nonces, but it still has
+limits:
 
 > When discussing this work, we found a widespread misunderstanding of the term “nonce-misuse
 resistant”. Many people appear to expect the security of a nonce-misuse resistant scheme to be
@@ -51,7 +58,7 @@ with the same key, and where nonce repetition is a real threat. In such cases, i
 enjoy the better bounds available for encryption schemes that utilize state to ensure unique nonces
 in every encryption.
 
-(from ["AES-GCM-SIV: Specification and Analysis"](https://eprint.iacr.org/2017/168))
+(quotes from ["AES-GCM-SIV: Specification and Analysis"](https://eprint.iacr.org/2017/168))
 
 ## Add to your project
 
