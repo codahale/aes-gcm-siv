@@ -66,7 +66,7 @@ in every encryption.
 <dependency>
   <groupId>com.codahale</groupId>
   <artifactId>aes-gcm-siv</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
@@ -80,18 +80,23 @@ import java.util.Optional;
 class Example {
   void doIt() {
     final ByteString key = ByteString.decodeHex("ee8e1ed9ff2540ae8f2ba9f50bc2f27c");
-    final ByteString nonce = ByteString.decodeHex("752abad3e0afb5f434dc4310");
+    final AEAD aead = new AEAD(key);
+    
     final ByteString plaintext = ByteString.encodeUtf8("Hello world");
     final ByteString data = ByteString.encodeUtf8("example");
    
-    final AEAD aead = new AEAD(key);
-    final ByteString ciphertext = aead.seal(nonce, plaintext, data);
-    final Optional<ByteString> result = aead.open(nonce, ciphertext, data);
+    // automatically generates a nonce
+    final ByteString ciphertext = aead.seal(plaintext, data);
+    
+    // automatically parses the nonce from the ciphertext
+    final Optional<ByteString> result = aead.open(ciphertext, data);
 
     System.out.println(result);
   } 
 }
 ```
+
+`AEAD` also has versions of `seal` and `open` which support pre-generated nonces.
 
 ## License
 
