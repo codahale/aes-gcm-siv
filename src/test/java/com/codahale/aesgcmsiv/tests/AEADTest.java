@@ -20,13 +20,18 @@ import static org.quicktheories.quicktheories.QuickTheory.qt;
 
 import com.codahale.aesgcmsiv.AEAD;
 import com.google.common.io.Resources;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import okio.ByteString;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ObjectArrayArguments;
 import org.quicktheories.quicktheories.core.Source;
 
 class AEADTest {
@@ -41,47 +46,27 @@ class AEADTest {
     });
   }
 
-  @Test
-  void testVectors() throws Exception {
+  @SuppressWarnings("unused")
+  static Stream<Arguments> testVectors() throws IOException {
     final URL file = Resources.getResource("test-vectors.csv");
-    final List<String[]> vectors = Resources.readLines(file, StandardCharsets.UTF_8)
-                                            .stream()
-                                            .skip(1)
-                                            .map(l -> l.split(","))
-                                            .collect(Collectors.toList());
-    for (String[] vector : vectors) {
-      final ByteString key = ByteString.decodeHex(vector[0]);
-      final ByteString nonce = ByteString.decodeHex(vector[1]);
-      final ByteString plaintext = ByteString.decodeHex(vector[2]);
-      final ByteString data = ByteString.decodeHex(vector[3]);
-      final ByteString ciphertext = ByteString.decodeHex(vector[4]);
-
-      final AEAD aead = new AEAD(key);
-      final ByteString c = aead.seal(nonce, plaintext, data);
-      assertEquals(ciphertext, c);
-
-      final Optional<ByteString> p = aead.open(nonce, c, data);
-      assertTrue(p.isPresent());
-      assertEquals(plaintext, p.get());
-    }
+    return Resources.readLines(file, StandardCharsets.UTF_8)
+                    .stream()
+                    .skip(1)
+                    .map(l -> ObjectArrayArguments.create(Arrays.stream(l.split(","))
+                                                                .map(ByteString::decodeHex)
+                                                                .toArray()));
   }
 
-  @Test
-  void exampleRoundTrip() throws Exception {
-    final ByteString key = ByteString.decodeHex("ee8e1ed9ff2540ae8f2ba9f50bc2f27c");
-    final ByteString nonce = ByteString.decodeHex("752abad3e0afb5f434dc4310");
-    final ByteString plaintext = ByteString.encodeUtf8("Hello world");
-    final ByteString data = ByteString.encodeUtf8("example");
+  @ParameterizedTest
+  @MethodSource(names = "testVectors")
+  void matchTestVectors(ByteString k, ByteString n, ByteString p, ByteString d, ByteString c) {
+    final AEAD aead = new AEAD(k);
+    final ByteString c2 = aead.seal(n, p, d);
+    assertEquals(c, c2);
 
-    final AEAD aead = new AEAD(key);
-    final ByteString ciphertext = aead.seal(nonce, plaintext, data);
-
-    assertEquals(ByteString.decodeHex("5d349ead175ef6b1def6fd4fbcdeb7e4793f4a1d7e4faa70100af1"),
-        ciphertext);
-
-    final Optional<ByteString> p = aead.open(nonce, ciphertext, data);
-    assertTrue(p.isPresent());
-    assertEquals(plaintext, p.get());
+    final Optional<ByteString> p2 = aead.open(n, c2, d);
+    assertTrue(p2.isPresent());
+    assertEquals(p, p2.get());
   }
 
   @Test
