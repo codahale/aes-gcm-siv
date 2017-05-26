@@ -18,6 +18,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Optional;
+import javax.annotation.CheckReturnValue;
 import okio.Buffer;
 import okio.ByteString;
 import org.bouncycastle.crypto.engines.AESEngine;
@@ -59,6 +60,7 @@ public class AEAD {
    * @param data authenticated data (may be empty)
    * @return the encrypted message
    */
+  @CheckReturnValue
   public ByteString seal(ByteString nonce, ByteString plaintext, ByteString data) {
     if (nonce.size() != 12) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
@@ -86,6 +88,7 @@ public class AEAD {
    * @param data authenticated data (may be empty)
    * @return the random nonce and the encrypted message
    */
+  @CheckReturnValue
   public ByteString seal(ByteString plaintext, ByteString data) {
     final byte[] nonce = new byte[12];
     random.nextBytes(nonce);
@@ -103,6 +106,7 @@ public class AEAD {
    * @param data the authenticated data used to encrypt the message (may be empty)
    * @return the plaintext message
    */
+  @CheckReturnValue
   public Optional<ByteString> open(ByteString nonce, ByteString ciphertext, ByteString data) {
     if (nonce.size() != 12) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
@@ -133,6 +137,7 @@ public class AEAD {
    * @param data the authenticated data used to encrypt the message (may be empty)
    * @return the plaintext message
    */
+  @CheckReturnValue
   public Optional<ByteString> open(ByteString ciphertext, ByteString data) {
     if (ciphertext.size() < 12) {
       return Optional.empty();
