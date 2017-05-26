@@ -19,19 +19,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.quicktheories.quicktheories.QuickTheory.qt;
 
 import com.codahale.aesgcmsiv.AEAD;
-import com.google.common.io.Resources;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import okio.ByteString;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ObjectArrayArguments;
+import org.junit.jupiter.params.provider.CsvFileSource;
 import org.quicktheories.quicktheories.core.Source;
 
 class AEADTest {
@@ -46,27 +39,22 @@ class AEADTest {
     });
   }
 
-  @SuppressWarnings("unused")
-  static Stream<Arguments> testVectors() throws IOException {
-    final URL file = Resources.getResource("test-vectors.csv");
-    return Resources.readLines(file, StandardCharsets.UTF_8)
-                    .stream()
-                    .skip(1)
-                    .map(l -> ObjectArrayArguments.create(Arrays.stream(l.split(","))
-                                                                .map(ByteString::decodeHex)
-                                                                .toArray()));
-  }
-
   @ParameterizedTest
-  @MethodSource(names = "testVectors")
-  void matchTestVectors(ByteString k, ByteString n, ByteString p, ByteString d, ByteString c) {
-    final AEAD aead = new AEAD(k);
-    final ByteString c2 = aead.seal(n, p, d);
-    assertEquals(c, c2);
+  @CsvFileSource(resources = "/test-vectors.csv")
+  void matchTestVectors(String k, String n, @Nullable String p, @Nullable String d, String c) {
+    final ByteString key = ByteString.decodeHex(k);
+    final ByteString nonce = ByteString.decodeHex(n);
+    final ByteString plaintext = p == null ? ByteString.EMPTY : ByteString.decodeHex(p);
+    final ByteString data = d == null ? ByteString.EMPTY : ByteString.decodeHex(d);
+    final ByteString ciphertext = ByteString.decodeHex(c);
 
-    final Optional<ByteString> p2 = aead.open(n, c2, d);
+    final AEAD aead = new AEAD(key);
+    final ByteString c2 = aead.seal(nonce, plaintext, data);
+    assertEquals(ciphertext, c2);
+
+    final Optional<ByteString> p2 = aead.open(nonce, c2, data);
     assertTrue(p2.isPresent());
-    assertEquals(p, p2.get());
+    assertEquals(plaintext, p2.get());
   }
 
   @Test
