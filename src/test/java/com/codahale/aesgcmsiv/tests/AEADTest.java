@@ -51,7 +51,7 @@ class AEADTest {
                                             .collect(Collectors.toList());
     for (String[] vector : vectors) {
       final ByteString key = ByteString.decodeHex(vector[0]);
-      final ByteString nonce = ByteString.decodeHex(vector[1].substring(0, 24));
+      final ByteString nonce = ByteString.decodeHex(vector[1]);
       final ByteString plaintext = ByteString.decodeHex(vector[2]);
       final ByteString data = ByteString.decodeHex(vector[3]);
       final ByteString ciphertext = ByteString.decodeHex(vector[4]);
