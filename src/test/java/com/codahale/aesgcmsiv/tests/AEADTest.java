@@ -40,7 +40,13 @@ class AEADTest {
   }
 
   @ParameterizedTest
-  @CsvFileSource(resources = "/test-vectors.csv")
+  @CsvFileSource(resources = {
+      "/8_Worked_example.csv",
+      // all test vectors from Appendix C
+      "/C1_AEAD_AES_128_GCM_SIV.csv",
+      "/C2_AEAD_AES_256_GCM_SIV.csv",
+      "/C3_Counter_wrap_tests.csv"
+  })
   void matchTestVectors(String k, String n, @Nullable String p, @Nullable String d, String c) {
     final ByteString key = ByteString.decodeHex(k);
     final ByteString nonce = ByteString.decodeHex(n);
