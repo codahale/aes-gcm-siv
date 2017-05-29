@@ -220,14 +220,14 @@ public class AEAD {
     final AESEngine aes = new AESEngine();
     aes.init(true, new KeyParameter(key));
     final byte[] out = new byte[input.length];
-    long ctr = Pack.littleEndianToInt(counter, 0);
+    int ctr = Pack.littleEndianToInt(counter, 0);
     final byte[] k = new byte[aes.getBlockSize()];
     for (int i = 0; i < input.length; i += 16) {
       aes.processBlock(counter, 0, k, 0);
       final int len = Math.min(16, input.length - i);
       GCMUtil.xor(k, input, i, len);
       System.arraycopy(k, 0, out, i, len);
-      Pack.intToLittleEndian((int) ++ctr, counter, 0);
+      Pack.intToLittleEndian(++ctr, counter, 0);
     }
     return out;
   }
