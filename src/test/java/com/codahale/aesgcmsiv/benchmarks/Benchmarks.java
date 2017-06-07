@@ -17,6 +17,9 @@ package com.codahale.aesgcmsiv.benchmarks;
 import com.codahale.aesgcmsiv.AEAD;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import okio.ByteString;
 import org.openjdk.jmh.Main;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -32,16 +35,26 @@ import org.openjdk.jmh.runner.RunnerException;
 @BenchmarkMode(Mode.AverageTime)
 public class Benchmarks {
 
-  private final AEAD aead = new AEAD(ByteString.of(new byte[16]));
-  private final ByteString nonce = ByteString.of(new byte[12]);
-  private final ByteString plaintext = ByteString.of(new byte[1024]);
+  private final byte[] key = new byte[16];
+  private final byte[] n = new byte[12];
+  private final byte[] p = new byte[1024];
+  private final AEAD aead = new AEAD(ByteString.of(key));
+  private final ByteString nonce = ByteString.of(n);
+  private final ByteString plaintext = ByteString.of(p);
 
   public static void main(String[] args) throws IOException, RunnerException {
     Main.main(args);
   }
 
   @Benchmark
-  public ByteString encrypt() {
+  public ByteString aes_GCM_SIV() {
     return aead.seal(nonce, plaintext, ByteString.EMPTY);
+  }
+
+  @Benchmark
+  public byte[] aes_GCM() throws Exception {
+    final Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+    cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new GCMParameterSpec(128, n));
+    return cipher.doFinal(p);
   }
 }
