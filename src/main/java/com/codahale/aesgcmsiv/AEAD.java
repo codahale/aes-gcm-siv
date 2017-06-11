@@ -36,8 +36,9 @@ import org.bouncycastle.util.Pack;
  */
 public class AEAD {
 
-  private final ByteString key;
+  private final AESEngine aes;
   private final SecureRandom random;
+  private final boolean aes128;
 
   /**
    * Creates a new {@link AEAD} instance with the given key.
@@ -48,8 +49,9 @@ public class AEAD {
     if (key.size() != 16 && key.size() != 32) {
       throw new IllegalArgumentException("Key must be 16 or 32 bytes long");
     }
-    this.key = key;
+    this.aes = newAES(key.toByteArray());
     this.random = new SecureRandom();
+    this.aes128 = key.size() == 16;
   }
 
   /**
@@ -65,18 +67,17 @@ public class AEAD {
     if (nonce.size() != 12) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
     }
-
     final byte[] n = nonce.toByteArray();
     final byte[] p = plaintext.toByteArray();
     final byte[] d = data.toByteArray();
-    final byte[] key = this.key.toByteArray();
-    final byte[] authKey = subKey(key, 0, 1, n);
-    final byte[] encKey = subKey(key, 2, key.length == 16 ? 3 : 5, n);
+    final byte[] authKey = subKey(0, 1, n);
+    final byte[] encKey = subKey(2, aes128 ? 3 : 5, n);
+    final AESEngine encAES = newAES(encKey);
     final byte[] hash = polyval(authKey, n, p, d);
-    final byte[] tag = aesECB(encKey, hash);
+    final byte[] tag = new byte[hash.length];
+    encAES.processBlock(hash, 0, tag, 0);
     final byte[] ctr = convertTag(tag);
-    final byte[] ciphertext = aesCTR(encKey, ctr, p);
-
+    final byte[] ciphertext = aesCTR(encAES, ctr, p);
     return new Buffer().write(ciphertext).write(tag).readByteString();
   }
 
@@ -115,14 +116,15 @@ public class AEAD {
     final byte[] n = nonce.toByteArray();
     final byte[] c = ciphertext.substring(0, ciphertext.size() - 16).toByteArray();
     final byte[] d = data.toByteArray();
-    final byte[] key = this.key.toByteArray();
-    final byte[] authKey = subKey(key, 0, 1, n);
-    final byte[] encKey = subKey(key, 2, key.length == 16 ? 3 : 5, n);
+    final byte[] authKey = subKey(0, 1, n);
+    final byte[] encKey = subKey(2, aes128 ? 3 : 5, n);
+    final AESEngine encAES = newAES(encKey);
     final byte[] tag = ciphertext.substring(c.length, ciphertext.size()).toByteArray();
     final byte[] ctr = convertTag(tag);
-    final byte[] plaintext = aesCTR(encKey, ctr, c);
+    final byte[] plaintext = aesCTR(encAES, ctr, c);
     final byte[] hash = polyval(authKey, n, plaintext, d);
-    final byte[] actual = aesECB(encKey, hash);
+    final byte[] actual = new byte[hash.length];
+    encAES.processBlock(hash, 0, actual, 0);
 
     if (MessageDigest.isEqual(tag, actual)) {
       return Optional.of(ByteString.of(plaintext));
@@ -196,29 +198,20 @@ public class AEAD {
     return out;
   }
 
-  private byte[] subKey(byte[] key, int ctrStart, int ctrEnd, byte[] nonce) {
+  private byte[] subKey(int ctrStart, int ctrEnd, byte[] nonce) {
     final byte[] in = new byte[16];
     System.arraycopy(nonce, 0, in, in.length - nonce.length, nonce.length);
     final byte[] out = new byte[(ctrEnd - ctrStart + 1) * 8];
+    final byte[] x = new byte[16];
     for (int ctr = ctrStart; ctr <= ctrEnd; ctr++) {
       Pack.intToLittleEndian(ctr, in, 0);
-      final byte[] x = aesECB(key, in);
+      aes.processBlock(in, 0, x, 0);
       System.arraycopy(x, 0, out, (ctr - ctrStart) * 8, 8);
     }
     return out;
   }
 
-  private byte[] aesECB(byte[] key, byte[] input) {
-    final AESEngine aes = new AESEngine();
-    aes.init(true, new KeyParameter(key));
-    final byte[] out = new byte[input.length];
-    aes.processBlock(input, 0, out, 0);
-    return out;
-  }
-
-  private byte[] aesCTR(byte[] key, byte[] counter, byte[] input) {
-    final AESEngine aes = new AESEngine();
-    aes.init(true, new KeyParameter(key));
+  private byte[] aesCTR(AESEngine aes, byte[] counter, byte[] input) {
     final byte[] out = new byte[input.length];
     int ctr = Pack.littleEndianToInt(counter, 0);
     final byte[] k = new byte[aes.getBlockSize()];
@@ -230,5 +223,11 @@ public class AEAD {
       Pack.intToLittleEndian(++ctr, counter, 0);
     }
     return out;
+  }
+
+  private AESEngine newAES(byte[] key) {
+    final AESEngine aes = new AESEngine();
+    aes.init(true, new KeyParameter(key));
+    return aes;
   }
 }
