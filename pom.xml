@@ -20,12 +20,12 @@
 
   <groupId>com.codahale</groupId>
   <artifactId>aes-gcm-siv</artifactId>
-  <version>0.2.3-SNAPSHOT</version>
+  <version>0.3.0-SNAPSHOT</version>
 
   <name>AES-GCM-SIV</name>
   <url>https://github.com/codahale/aes-gcm-siv</url>
   <description>
-    An implementation of GCM-SIV mode for BouncyCastle.
+    An implementation of the AES-GCM-SIV authenticated encryption algorithm.
   </description>
   <licenses>
     <license>
@@ -61,11 +61,6 @@
       <groupId>com.squareup.okio</groupId>
       <artifactId>okio</artifactId>
       <version>1.13.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk15on</artifactId>
-      <version>1.57</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>

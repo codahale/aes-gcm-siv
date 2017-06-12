@@ -14,8 +14,6 @@
 
 package com.codahale.aesgcmsiv;
 
-import org.bouncycastle.util.Pack;
-
 // An implementation of POLYVAL based on GHASH because even BoringSSL doesn't have a POLYVAL impl.
 // Does its own byte-order conversion to avoid confusion.
 final class Polyval {
@@ -29,10 +27,10 @@ final class Polyval {
 
   // mulX_GHASH, basically
   Polyval(byte[] h) {
-    int v0 = Pack.littleEndianToInt(h, 12);
-    int v1 = Pack.littleEndianToInt(h, 8);
-    int v2 = Pack.littleEndianToInt(h, 4);
-    int v3 = Pack.littleEndianToInt(h, 0);
+    int v0 = Bytes.getInt(h, 12);
+    int v1 = Bytes.getInt(h, 8);
+    int v2 = Bytes.getInt(h, 4);
+    int v3 = Bytes.getInt(h, 0);
     int b = v0;
     v0 = b >>> 1;
     int c = b << 31;
@@ -59,7 +57,7 @@ final class Polyval {
 
     // breaking this up into two duplicate loops is faster
 
-    long x = s0 ^ Pack.littleEndianToLong(b, 8);
+    long x = s0 ^ Bytes.getLong(b, 8);
     for (int i = 0; i < 64; i++) {
       long m = x >> 63;
       z0 ^= v0 & m;
@@ -72,7 +70,7 @@ final class Polyval {
       x <<= 1;
     }
 
-    x = s1 ^ Pack.littleEndianToLong(b, 0);
+    x = s1 ^ Bytes.getLong(b, 0);
     for (int i = 64; i < 127; i++) {
       long m = x >> 63;
       z0 ^= v0 & m;
@@ -92,8 +90,8 @@ final class Polyval {
 
   byte[] digest() {
     byte[] d = new byte[16];
-    Pack.longToLittleEndian(s0, d, 8);
-    Pack.longToLittleEndian(s1, d, 0);
+    Bytes.putLong(s0, d, 8);
+    Bytes.putLong(s1, d, 0);
     return d;
   }
 }

@@ -14,17 +14,19 @@
 
 package com.codahale.aesgcmsiv;
 
+import java.security.InvalidKeyException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Optional;
 import javax.annotation.CheckReturnValue;
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.ShortBufferException;
+import javax.crypto.spec.SecretKeySpec;
 import okio.Buffer;
 import okio.ByteString;
-import org.bouncycastle.crypto.engines.AESEngine;
-import org.bouncycastle.crypto.modes.gcm.GCMUtil;
-import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.util.Pack;
 
 /**
  * An AES-GCM-SIV AEAD instance.
@@ -34,7 +36,7 @@ import org.bouncycastle.util.Pack;
  */
 public class AEAD {
 
-  private final AESEngine aes;
+  private final Cipher aes;
   private final SecureRandom random;
   private final boolean aes128;
 
@@ -69,7 +71,7 @@ public class AEAD {
     final byte[] p = plaintext.toByteArray();
     final byte[] d = data.toByteArray();
     final byte[] authKey = subKey(0, 1, n);
-    final AESEngine encAES = newAES(subKey(2, aes128 ? 3 : 5, n));
+    final Cipher encAES = newAES(subKey(2, aes128 ? 3 : 5, n));
     final byte[] tag = hash(encAES, authKey, n, p, d);
     final byte[] ciphertext = aesCTR(encAES, tag, p);
     return new Buffer().write(ciphertext).write(tag).readByteString();
@@ -112,7 +114,7 @@ public class AEAD {
     final byte[] d = data.toByteArray();
     final byte[] tag = ciphertext.substring(c.length, ciphertext.size()).toByteArray();
     final byte[] authKey = subKey(0, 1, n);
-    final AESEngine encAES = newAES(subKey(2, aes128 ? 3 : 5, n));
+    final Cipher encAES = newAES(subKey(2, aes128 ? 3 : 5, n));
     final byte[] plaintext = aesCTR(encAES, tag, c);
     final byte[] actual = hash(encAES, authKey, n, plaintext, d);
 
@@ -137,7 +139,7 @@ public class AEAD {
     return open(ciphertext.substring(0, 12), ciphertext.substring(12), data);
   }
 
-  private byte[] hash(AESEngine aes, byte[] h, byte[] nonce, byte[] plaintext, byte[] data) {
+  private byte[] hash(Cipher aes, byte[] h, byte[] nonce, byte[] plaintext, byte[] data) {
     final Polyval polyval = new Polyval(h);
     final byte[] x = aeadBlock(plaintext, data);
     final byte[] in = new byte[16];
@@ -152,7 +154,11 @@ public class AEAD {
     hash[hash.length - 1] &= ~0x80;
 
     // encrypt polyval hash to produce tag
-    aes.processBlock(hash, 0, hash, 0);
+    try {
+      aes.update(hash, 0, hash.length, hash, 0);
+    } catch (ShortBufferException e) {
+      throw new RuntimeException(e);
+    }
     return hash;
   }
 
@@ -162,8 +168,8 @@ public class AEAD {
     final byte[] out = new byte[8 + 8 + plaintext.length + plaintextPad + data.length + dataPad];
     System.arraycopy(data, 0, out, 0, data.length);
     System.arraycopy(plaintext, 0, out, data.length + dataPad, plaintext.length);
-    Pack.intToLittleEndian(data.length * 8, out, out.length - 16);
-    Pack.intToLittleEndian(plaintext.length * 8, out, out.length - 8);
+    Bytes.putInt(data.length * 8, out, out.length - 16);
+    Bytes.putInt(plaintext.length * 8, out, out.length - 8);
     return out;
   }
 
@@ -173,32 +179,46 @@ public class AEAD {
     final byte[] out = new byte[(ctrEnd - ctrStart + 1) * 8];
     final byte[] x = new byte[16];
     for (int ctr = ctrStart; ctr <= ctrEnd; ctr++) {
-      Pack.intToLittleEndian(ctr, in, 0);
-      aes.processBlock(in, 0, x, 0);
+      Bytes.putInt(ctr, in, 0);
+      try {
+        aes.update(in, 0, in.length, x, 0);
+      } catch (ShortBufferException e) {
+        throw new RuntimeException(e);
+      }
       System.arraycopy(x, 0, out, (ctr - ctrStart) * 8, 8);
     }
     return out;
   }
 
-  private byte[] aesCTR(AESEngine aes, byte[] tag, byte[] input) {
+  private byte[] aesCTR(Cipher aes, byte[] tag, byte[] input) {
     final byte[] counter = Arrays.copyOf(tag, tag.length);
     counter[counter.length - 1] |= 0x80;
     final byte[] out = new byte[input.length];
-    int ctr = Pack.littleEndianToInt(counter, 0);
+    int ctr = Bytes.getInt(counter, 0);
     final byte[] k = new byte[aes.getBlockSize()];
     for (int i = 0; i < input.length; i += 16) {
-      aes.processBlock(counter, 0, k, 0);
+      try {
+        aes.update(counter, 0, counter.length, k, 0);
+      } catch (ShortBufferException e) {
+        throw new RuntimeException(e);
+      }
       final int len = Math.min(16, input.length - i);
-      GCMUtil.xor(k, input, i, len);
+      for (int j = 0; j < len; j++) {
+        k[j] ^= input[i + j];
+      }
       System.arraycopy(k, 0, out, i, len);
-      Pack.intToLittleEndian(++ctr, counter, 0);
+      Bytes.putInt(++ctr, counter, 0);
     }
     return out;
   }
 
-  private AESEngine newAES(byte[] key) {
-    final AESEngine aes = new AESEngine();
-    aes.init(true, new KeyParameter(key));
-    return aes;
+  private Cipher newAES(byte[] key) {
+    try {
+      final Cipher aes = Cipher.getInstance("AES/ECB/NoPadding");
+      aes.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"));
+      return aes;
+    } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

@@ -14,11 +14,16 @@ algorithm described in
 
 ## Is it fast
 
-Well, no. AES-GCM-SIV's performance is largely dependent on hardware support for AES and GCM, but
-the Java Virtual Machine intrinsics for AES-NI and GCM are not available for general use. Java 8
-added AES-NI support, but only for AES-CBC, and Java 9 will improve GCM performance via `pclmulqdq`
-intrinsics, but only for AES-GCM. Still, things are plenty fast — encrypting a 1KiB message takes
-about 30-40µs on my laptop (vs 20-30µs for AES-GCM).
+It's plenty fast. AES-GCM-SIV's performance is largely dependent on hardware support for AES and
+GCM. Java 8 added AES-NI support, but only for AES-CBC, and Java 9 will improve GCM performance via
+`pclmulqdq` intrinsics, but only for AES-GCM. Still, things are plenty fast — encrypting a 1KiB
+message on my laptop is only slightly slower than AES-GCM:
+
+```
+Benchmark               Mode  Cnt   Score   Error  Units
+Benchmarks.aes_GCM      avgt  200  22.435 ± 0.122  us/op
+Benchmarks.aes_GCM_SIV  avgt  200  24.824 ± 0.530  us/op
+```
 
 ## Ok then why's it good
 

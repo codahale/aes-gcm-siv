@@ -16,11 +16,17 @@ package com.codahale.aesgcmsiv.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.quicktheories.quicktheories.QuickTheory.qt;
 
 import com.codahale.aesgcmsiv.AEAD;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
 import okio.ByteString;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,8 +53,12 @@ class AEADTest {
       "/C2_AEAD_AES_256_GCM_SIV.csv",
       "/C3_Counter_wrap_tests.csv"
   })
-  void matchTestVectors(String k, String n, @Nullable String p, @Nullable String d, String c) {
+  void matchTestVectors(String k, String n, @Nullable String p, @Nullable String d, String c)
+      throws NoSuchAlgorithmException, NoSuchPaddingException {
     final ByteString key = ByteString.decodeHex(k);
+
+    assumeTrue(isValidKey(key));
+
     final ByteString nonce = ByteString.decodeHex(n);
     final ByteString plaintext = p == null ? ByteString.EMPTY : ByteString.decodeHex(p);
     final ByteString data = d == null ? ByteString.EMPTY : ByteString.decodeHex(d);
@@ -61,6 +71,17 @@ class AEADTest {
     final Optional<ByteString> p2 = aead.open(nonce, c2, data);
     assertTrue(p2.isPresent());
     assertEquals(plaintext, p2.get());
+  }
+
+  private boolean isValidKey(ByteString key)
+      throws NoSuchPaddingException, NoSuchAlgorithmException {
+    try {
+      final Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
+      cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key.toByteArray(), "AES"));
+      return true;
+    } catch (InvalidKeyException e) {
+      return false;
+    }
   }
 
   @Test
