@@ -71,7 +71,7 @@ in every encryption.
 <dependency>
   <groupId>com.codahale</groupId>
   <artifactId>aes-gcm-siv</artifactId>
-  <version>0.2.2</version>
+  <version>0.3.0</version>
 </dependency>
 ```
 

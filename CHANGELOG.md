@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.3.0: 2017-06-12
+
+* Added a 64-bit implementation of `POLYVAL`, doubling performance.
+* Moved AES usage to JCE.
+* Removed Bouncy Castle dependency.
+
 ## v0.2.2: 2017-06-11
 
 * Eliminated unnecessary AES key scheduling.
