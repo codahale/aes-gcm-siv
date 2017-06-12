@@ -71,13 +71,9 @@ public class AEAD {
     final byte[] p = plaintext.toByteArray();
     final byte[] d = data.toByteArray();
     final byte[] authKey = subKey(0, 1, n);
-    final byte[] encKey = subKey(2, aes128 ? 3 : 5, n);
-    final AESEngine encAES = newAES(encKey);
-    final byte[] hash = polyval(authKey, n, p, d);
-    final byte[] tag = new byte[hash.length];
-    encAES.processBlock(hash, 0, tag, 0);
-    final byte[] ctr = convertTag(tag);
-    final byte[] ciphertext = aesCTR(encAES, ctr, p);
+    final AESEngine encAES = newAES(subKey(2, aes128 ? 3 : 5, n));
+    final byte[] tag = hash(encAES, authKey, n, p, d);
+    final byte[] ciphertext = aesCTR(encAES, tag, p);
     return new Buffer().write(ciphertext).write(tag).readByteString();
   }
 
@@ -116,15 +112,11 @@ public class AEAD {
     final byte[] n = nonce.toByteArray();
     final byte[] c = ciphertext.substring(0, ciphertext.size() - 16).toByteArray();
     final byte[] d = data.toByteArray();
-    final byte[] authKey = subKey(0, 1, n);
-    final byte[] encKey = subKey(2, aes128 ? 3 : 5, n);
-    final AESEngine encAES = newAES(encKey);
     final byte[] tag = ciphertext.substring(c.length, ciphertext.size()).toByteArray();
-    final byte[] ctr = convertTag(tag);
-    final byte[] plaintext = aesCTR(encAES, ctr, c);
-    final byte[] hash = polyval(authKey, n, plaintext, d);
-    final byte[] actual = new byte[hash.length];
-    encAES.processBlock(hash, 0, actual, 0);
+    final byte[] authKey = subKey(0, 1, n);
+    final AESEngine encAES = newAES(subKey(2, aes128 ? 3 : 5, n));
+    final byte[] plaintext = aesCTR(encAES, tag, c);
+    final byte[] actual = hash(encAES, authKey, n, plaintext, d);
 
     if (MessageDigest.isEqual(tag, actual)) {
       return Optional.of(ByteString.of(plaintext));
@@ -147,13 +139,8 @@ public class AEAD {
     return open(ciphertext.substring(0, 12), ciphertext.substring(12), data);
   }
 
-  private byte[] convertTag(byte[] tag) {
-    final byte[] ctr = Arrays.copyOf(tag, tag.length);
-    ctr[ctr.length - 1] |= 0x80;
-    return ctr;
-  }
-
-  private byte[] polyval(byte[] h, byte[] nonce, byte[] plaintext, byte[] data) {
+  private byte[] hash(AESEngine aes, byte[] h, byte[] nonce, byte[] plaintext, byte[] data) {
+    // polyval
     final GCMMultiplier multiplier = new Tables8kGCMMultiplier();
     multiplier.init(mulX_GHASH(h));
 
@@ -170,6 +157,9 @@ public class AEAD {
       hash[i] ^= nonce[i];
     }
     hash[hash.length - 1] &= ~0x80;
+
+    // encrypt polyval hash to produce tag
+    aes.processBlock(hash, 0, hash, 0);
     return hash;
   }
 
@@ -211,7 +201,9 @@ public class AEAD {
     return out;
   }
 
-  private byte[] aesCTR(AESEngine aes, byte[] counter, byte[] input) {
+  private byte[] aesCTR(AESEngine aes, byte[] tag, byte[] input) {
+    final byte[] counter = Arrays.copyOf(tag, tag.length);
+    counter[counter.length - 1] |= 0x80;
     final byte[] out = new byte[input.length];
     int ctr = Pack.littleEndianToInt(counter, 0);
     final byte[] k = new byte[aes.getBlockSize()];
