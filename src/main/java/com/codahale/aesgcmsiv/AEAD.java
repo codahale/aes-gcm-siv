@@ -22,9 +22,7 @@ import javax.annotation.CheckReturnValue;
 import okio.Buffer;
 import okio.ByteString;
 import org.bouncycastle.crypto.engines.AESEngine;
-import org.bouncycastle.crypto.modes.gcm.GCMMultiplier;
 import org.bouncycastle.crypto.modes.gcm.GCMUtil;
-import org.bouncycastle.crypto.modes.gcm.Tables8kGCMMultiplier;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.util.Pack;
 
@@ -140,19 +138,14 @@ public class AEAD {
   }
 
   private byte[] hash(AESEngine aes, byte[] h, byte[] nonce, byte[] plaintext, byte[] data) {
-    // polyval
-    final GCMMultiplier multiplier = new Tables8kGCMMultiplier();
-    multiplier.init(mulX_GHASH(h));
-
-    final byte[] s = new byte[16];
+    final Polyval polyval = new Polyval(h);
     final byte[] x = aeadBlock(plaintext, data);
-    for (int i = 0; i < x.length; i += s.length) {
-      final byte[] in = reverse(Arrays.copyOfRange(x, i, i + s.length));
-      GCMUtil.xor(s, in);
-      multiplier.multiplyH(s);
+    final byte[] in = new byte[16];
+    for (int i = 0; i < x.length; i += 16) {
+      System.arraycopy(x, i, in, 0, 16);
+      polyval.update(in);
     }
-
-    final byte[] hash = reverse(s);
+    final byte[] hash = polyval.digest();
     for (int i = 0; i < nonce.length; i++) {
       hash[i] ^= nonce[i];
     }
@@ -161,20 +154,6 @@ public class AEAD {
     // encrypt polyval hash to produce tag
     aes.processBlock(hash, 0, hash, 0);
     return hash;
-  }
-
-  private byte[] mulX_GHASH(byte[] x) {
-    final int[] ints = GCMUtil.asInts(reverse(x));
-    GCMUtil.multiplyP(ints);
-    return GCMUtil.asBytes(ints);
-  }
-
-  private byte[] reverse(byte[] x) {
-    final byte[] out = new byte[x.length];
-    for (int i = 0; i < x.length; i++) {
-      out[x.length - i - 1] = x[i];
-    }
-    return out;
   }
 
   private byte[] aeadBlock(byte[] plaintext, byte[] data) {
