@@ -57,7 +57,7 @@ class AEADTest {
       throws NoSuchAlgorithmException, NoSuchPaddingException {
     final ByteString key = ByteString.decodeHex(k);
 
-    assumeTrue(isValidKey(key), String.format("AES-%d is not supported", k.length() * 8));
+    assumeTrue(isValidKey(key), String.format("AES-%d is not supported", key.size() * 8));
 
     final ByteString nonce = ByteString.decodeHex(n);
     final ByteString plaintext = p == null ? ByteString.EMPTY : ByteString.decodeHex(p);
