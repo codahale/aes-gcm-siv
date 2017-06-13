@@ -18,22 +18,22 @@ interface Bytes {
 
   static void putInt(int n, byte[] b, int offset) {
     b[offset] = (byte) (n);
-    b[++offset] = (byte) (n >>> 8);
-    b[++offset] = (byte) (n >>> 16);
-    b[++offset] = (byte) (n >>> 24);
+    b[++offset] = (byte) (n >> 8);
+    b[++offset] = (byte) (n >> 16);
+    b[++offset] = (byte) (n >> 24);
   }
 
   static void putLong(long n, byte[] b, int offset) {
     final int hi = (int) (n & 0xffffffffL);
-    final int lo = (int) (n >>> 32);
+    final int lo = (int) (n >> 32);
     b[offset] = (byte) hi;
-    b[++offset] = (byte) (hi >>> 8);
-    b[++offset] = (byte) (hi >>> 16);
-    b[++offset] = (byte) (hi >>> 24);
+    b[++offset] = (byte) (hi >> 8);
+    b[++offset] = (byte) (hi >> 16);
+    b[++offset] = (byte) (hi >> 24);
     b[++offset] = (byte) lo;
-    b[++offset] = (byte) (lo >>> 8);
-    b[++offset] = (byte) (lo >>> 16);
-    b[++offset] = (byte) (lo >>> 24);
+    b[++offset] = (byte) (lo >> 8);
+    b[++offset] = (byte) (lo >> 16);
+    b[++offset] = (byte) (lo >> 24);
   }
 
   static int getInt(byte[] b, int offset) {
