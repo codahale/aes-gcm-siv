@@ -35,12 +35,10 @@ import org.openjdk.jmh.runner.RunnerException;
 @BenchmarkMode(Mode.AverageTime)
 public class Benchmarks {
 
-  private final byte[] key = new byte[16];
-  private final byte[] n = new byte[12];
-  private final byte[] p = new byte[1024];
-  private final AEAD aead = new AEAD(ByteString.of(key));
-  private final ByteString nonce = ByteString.of(n);
-  private final ByteString plaintext = ByteString.of(p);
+  private final ByteString key = ByteString.of(new byte[16]);
+  private final ByteString nonce = ByteString.of(new byte[12]);
+  private final ByteString plaintext = ByteString.of(new byte[1024]);
+  private final AEAD aead = new AEAD(key);
 
   public static void main(String[] args) throws IOException, RunnerException {
     Main.main(args);
@@ -54,7 +52,9 @@ public class Benchmarks {
   @Benchmark
   public byte[] aes_GCM() throws Exception {
     final Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-    cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"), new GCMParameterSpec(128, n));
-    return cipher.doFinal(p);
+    final GCMParameterSpec gcmSpec = new GCMParameterSpec(128, nonce.toByteArray());
+    final SecretKeySpec keySpec = new SecretKeySpec(key.toByteArray(), "AES");
+    cipher.init(Cipher.ENCRYPT_MODE, keySpec, gcmSpec);
+    return cipher.doFinal(new byte[1024]);
   }
 }
