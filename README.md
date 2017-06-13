@@ -21,8 +21,8 @@ message on my laptop is only slightly slower than AES-GCM:
 
 ```
 Benchmark               Mode  Cnt   Score   Error  Units
-Benchmarks.aes_GCM      avgt  200  22.435 ± 0.122  us/op
-Benchmarks.aes_GCM_SIV  avgt  200  24.824 ± 0.530  us/op
+Benchmarks.aes_GCM      avgt  200  22.104 ± 0.353  us/op
+Benchmarks.aes_GCM_SIV  avgt  200  23.401 ± 0.367  us/op
 ```
 
 ## Ok then why's it good
