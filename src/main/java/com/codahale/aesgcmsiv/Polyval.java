@@ -27,10 +27,11 @@ final class Polyval {
 
   // mulX_GHASH, basically
   Polyval(byte[] h) {
-    int v0 = Bytes.getInt(h, 12);
-    int v1 = Bytes.getInt(h, 8);
-    int v2 = Bytes.getInt(h, 4);
     int v3 = Bytes.getInt(h, 0);
+    int v2 = Bytes.getInt(h, 4);
+    int v1 = Bytes.getInt(h, 8);
+    int v0 = Bytes.getInt(h, 12);
+
     int b = v0;
     v0 = b >>> 1;
     int c = b << 31;
@@ -42,8 +43,8 @@ final class Polyval {
     c = b << 31;
     b = v3;
     v3 = (b >>> 1) | c;
-    int m = b << 31 >> 8;
-    v0 ^= (m & E1);
+    v0 ^= (b << 31 >> 8 & E1);
+
     this.h0 = ((v0 & 0xffffffffL) << 32) | v1 & 0xffffffffL;
     this.h1 = ((v2 & 0xffffffffL) << 32) | v3 & 0xffffffffL;
   }
@@ -55,11 +56,13 @@ final class Polyval {
     long z0 = 0;
     long z1 = 0;
 
+    long x0 = s1 ^ Bytes.getLong(b, 0);
+    long x1 = s0 ^ Bytes.getLong(b, 8);
+
     // breaking this up into two duplicate loops is faster
 
-    long x = s0 ^ Bytes.getLong(b, 8);
     for (int i = 0; i < 64; i++) {
-      long m = x >> 63;
+      long m = x1 >> 63;
       z0 ^= v0 & m;
       z1 ^= v1 & m;
       m = v1 << 63 >> 63;
@@ -67,12 +70,11 @@ final class Polyval {
       v0 >>>= 1;
       v1 = v1 >>> 1 | c << 63;
       v0 ^= E & m;
-      x <<= 1;
+      x1 <<= 1;
     }
 
-    x = s1 ^ Bytes.getLong(b, 0);
     for (int i = 64; i < 127; i++) {
-      long m = x >> 63;
+      long m = x0 >> 63;
       z0 ^= v0 & m;
       z1 ^= v1 & m;
       m = v1 << 63 >> 63;
@@ -80,18 +82,18 @@ final class Polyval {
       v0 >>>= 1;
       v1 = v1 >>> 1 | c << 63;
       v0 ^= E & m;
-      x <<= 1;
+      x0 <<= 1;
     }
 
-    long m = x >> 63;
+    final long m = x0 >> 63;
     this.s0 = (z0 ^ (v0 & m));
     this.s1 = (z1 ^ (v1 & m));
   }
 
   byte[] digest() {
     byte[] d = new byte[16];
-    Bytes.putLong(s0, d, 8);
     Bytes.putLong(s1, d, 0);
+    Bytes.putLong(s0, d, 8);
     return d;
   }
 }
