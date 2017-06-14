@@ -1,5 +1,12 @@
 # Change Log
 
+## v0.3.1: 2017-06-14
+
+* Sequentialized reads and writes.
+* Optimized keystream generation.
+* Optimized counter operations.
+* Improved performance by an additional ~10%.
+
 ## v0.3.0: 2017-06-12
 
 * Added a 64-bit implementation of `POLYVAL`, doubling performance.
