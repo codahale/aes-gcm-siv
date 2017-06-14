@@ -194,20 +194,27 @@ public class AEAD {
     final byte[] counter = Arrays.copyOf(tag, tag.length);
     counter[counter.length - 1] |= 0x80;
     final byte[] out = new byte[input.length];
-    int ctr = Bytes.getInt(counter, 0);
     final byte[] k = new byte[aes.getBlockSize()];
     for (int i = 0; i < input.length; i += 16) {
+      // encrypt counter to produce keystream
       try {
         aes.update(counter, 0, counter.length, k, 0);
       } catch (ShortBufferException e) {
         throw new RuntimeException(e);
       }
+
+      // xor input with keystream
       final int len = Math.min(16, input.length - i);
       for (int j = 0; j < len; j++) {
-        k[j] ^= input[i + j];
+        final int idx = i + j;
+        out[idx] = (byte) (input[idx] ^ k[j]);
       }
-      System.arraycopy(k, 0, out, i, len);
-      Bytes.putInt(++ctr, counter, 0);
+
+      // increment counter
+      int j = 0;
+      while (j < 4 && ++counter[j] == 0) {
+        j++;
+      }
     }
     return out;
   }
