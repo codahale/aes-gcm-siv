@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.4.0: 2017-06-14
+
+* Moved to `byte[]`-based API.
+* Removed okio dependency.
+
 ## v0.3.1: 2017-06-14
 
 * Sequentialized reads and writes.
