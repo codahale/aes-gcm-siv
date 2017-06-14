@@ -14,7 +14,7 @@
 
 package com.codahale.aesgcmsiv.tests;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.quicktheories.quicktheories.QuickTheory.qt;
@@ -22,6 +22,7 @@ import static org.quicktheories.quicktheories.QuickTheory.qt;
 import com.codahale.aesgcmsiv.AEAD;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.crypto.Cipher;
@@ -35,13 +36,13 @@ import org.quicktheories.quicktheories.core.Source;
 
 class AEADTest {
 
-  private static Source<ByteString> byteStrings(int minSize, int maxSize) {
+  private static Source<byte[]> bytes(int minSize, int maxSize) {
     return Source.of((prng, step) -> {
       final byte[] bytes = new byte[prng.nextInt(minSize, maxSize)];
       for (int i = 0; i < bytes.length; i++) {
         bytes[i] = (byte) prng.nextInt(0, 255);
       }
-      return ByteString.of(bytes);
+      return bytes;
     });
   }
 
@@ -55,29 +56,29 @@ class AEADTest {
   })
   void matchTestVectors(String k, String n, @Nullable String p, @Nullable String d, String c)
       throws NoSuchAlgorithmException, NoSuchPaddingException {
-    final ByteString key = ByteString.decodeHex(k);
+    final byte[] key = ByteString.decodeHex(k).toByteArray();
 
-    assumeTrue(isValidKey(key), String.format("AES-%d is not supported", key.size() * 8));
+    assumeTrue(isValidKey(key), String.format("AES-%d is not supported", key.length * 8));
 
-    final ByteString nonce = ByteString.decodeHex(n);
-    final ByteString plaintext = p == null ? ByteString.EMPTY : ByteString.decodeHex(p);
-    final ByteString data = d == null ? ByteString.EMPTY : ByteString.decodeHex(d);
-    final ByteString ciphertext = ByteString.decodeHex(c);
+    final byte[] nonce = ByteString.decodeHex(n).toByteArray();
+    final byte[] plaintext = (p == null ? ByteString.EMPTY : ByteString.decodeHex(p)).toByteArray();
+    final byte[] data = (d == null ? ByteString.EMPTY : ByteString.decodeHex(d)).toByteArray();
+    final byte[] ciphertext = ByteString.decodeHex(c).toByteArray();
 
     final AEAD aead = new AEAD(key);
-    final ByteString c2 = aead.seal(nonce, plaintext, data);
-    assertEquals(ciphertext, c2);
+    final byte[] c2 = aead.seal(nonce, plaintext, data);
+    assertArrayEquals(ciphertext, c2);
 
-    final Optional<ByteString> p2 = aead.open(nonce, c2, data);
+    final Optional<byte[]> p2 = aead.open(nonce, c2, data);
     assertTrue(p2.isPresent());
-    assertEquals(plaintext, p2.get());
+    assertArrayEquals(plaintext, p2.get());
   }
 
-  private boolean isValidKey(ByteString key)
+  private boolean isValidKey(byte[] key)
       throws NoSuchPaddingException, NoSuchAlgorithmException {
     try {
       final Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
-      cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key.toByteArray(), "AES"));
+      cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"));
       return true;
     } catch (InvalidKeyException e) {
       return false;
@@ -86,26 +87,25 @@ class AEADTest {
 
   @Test
   void roundTrip() throws Exception {
-    qt().forAll(byteStrings(16, 16), byteStrings(12, 12), byteStrings(0, 1024),
-        byteStrings(0, 1024))
+    qt().forAll(bytes(16, 16), bytes(12, 12), bytes(0, 1024), bytes(0, 1024))
         .check((key, nonce, plaintext, data) -> {
           final AEAD aead = new AEAD(key);
-          final ByteString ciphertext = aead.seal(nonce, plaintext, data);
-          final Optional<ByteString> message = aead.open(nonce, ciphertext, data);
+          final byte[] ciphertext = aead.seal(nonce, plaintext, data);
+          final Optional<byte[]> message = aead.open(nonce, ciphertext, data);
 
-          return message.isPresent() && plaintext.equals(message.get());
+          return message.isPresent() && Arrays.equals(plaintext, message.get());
         });
   }
 
   @Test
   void simpleRoundTrip() throws Exception {
-    qt().forAll(byteStrings(16, 16), byteStrings(0, 1024), byteStrings(0, 1024))
+    qt().forAll(bytes(16, 16), bytes(0, 1024), bytes(0, 1024))
         .check((key, plaintext, data) -> {
           final AEAD aead = new AEAD(key);
-          final ByteString ciphertext = aead.seal(plaintext, data);
-          final Optional<ByteString> message = aead.open(ciphertext, data);
+          final byte[] ciphertext = aead.seal(plaintext, data);
+          final Optional<byte[]> message = aead.open(ciphertext, data);
 
-          return message.isPresent() && plaintext.equals(message.get());
+          return message.isPresent() && Arrays.equals(plaintext, message.get());
         });
   }
 }

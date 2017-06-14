@@ -16,14 +16,16 @@ algorithm described in
 
 It's very fast. AES-GCM-SIV's performance is largely dependent on hardware support for AES and GCM.
 Java 8 added AES-NI support, but only for AES-CBC, and Java 9 will improve GCM performance via
-`pclmulqdq` intrinsics, but only for AES-GCM. All things being equal, AES-GCM _can_ be ~7% faster
-than AES-GCM-SIV--it doesn't require two passes over the message--but on my laptop, at least,
-AES-GCM-SIV is just a touch faster than AES-GCM:
+`pclmulqdq` intrinsics, but only for AES-GCM. All things being equal, AES-GCM is slightly faster for
+encryption and slightly slower for decryption. My benchmarking on a `c4.xlarge` EC2 instance using
+Java 8 mirrors this:
 
 ```
-Benchmark               Mode  Cnt   Score   Error  Units
-Benchmarks.aes_GCM      avgt  200  23.080 ± 0.299  us/op
-Benchmarks.aes_GCM_SIV  avgt  200  22.259 ± 0.243  us/op
+Benchmark                       Mode  Cnt   Score   Error  Units
+Benchmarks.aes_GCM_Decrypt      avgt  200  24.333 ± 0.014  us/op
+Benchmarks.aes_GCM_Encrypt      avgt  200  23.560 ± 0.011  us/op
+Benchmarks.aes_GCM_SIV_Decrypt  avgt  200  23.939 ± 0.019  us/op
+Benchmarks.aes_GCM_SIV_Encrypt  avgt  200  23.943 ± 0.020  us/op
 ```
 
 ## Why's it good
@@ -72,7 +74,7 @@ in every encryption.
 <dependency>
   <groupId>com.codahale</groupId>
   <artifactId>aes-gcm-siv</artifactId>
-  <version>0.3.1</version>
+  <version>0.4.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -80,24 +82,23 @@ in every encryption.
 
 ```java
 import com.codahale.aesgcmsiv.AEAD;
-import okio.ByteString;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 class Example {
-  void doIt() {
-    final ByteString key = ByteString.decodeHex("ee8e1ed9ff2540ae8f2ba9f50bc2f27c");
-    final AEAD aead = new AEAD(key);
+  void roundTrip() {
+    final AEAD aead = new AEAD(decodeHex("ee8e1ed9ff2540ae8f2ba9f50bc2f27c"));
     
-    final ByteString plaintext = ByteString.encodeUtf8("Hello world");
-    final ByteString data = ByteString.encodeUtf8("example");
+    final byte[] plaintext = "Hello world".getBytes(StandardCharsets.UTF_8);
+    final byte[] data = "example".getBytes(StandardCharsets.UTF_8);
    
     // automatically generates a nonce
-    final ByteString ciphertext = aead.seal(plaintext, data);
+    final byte[] ciphertext = aead.seal(plaintext, data);
     
     // automatically parses the nonce from the ciphertext
-    final Optional<ByteString> result = aead.open(ciphertext, data);
+    final Optional<byte[]> result = aead.open(ciphertext, data);
 
-    System.out.println(result);
+    System.out.println(result.map(String::new));
   } 
 }
 ```

@@ -15,18 +15,18 @@
 package com.codahale.aesgcmsiv.perf;
 
 import com.codahale.aesgcmsiv.AEAD;
-import okio.ByteString;
 
 public class PerfHarness {
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
   public static void main(String[] args) {
-    final AEAD aead = new AEAD(ByteString.of(new byte[16]));
-    final ByteString nonce = ByteString.of(new byte[12]);
-    final ByteString plaintext = ByteString.of(new byte[1024]);
+    final AEAD aead = new AEAD(new byte[16]);
+    final byte[] nonce = new byte[12];
+    final byte[] plaintext = new byte[1024];
+    final byte[] data = new byte[0];
 
     for (int i = 0; i < 1_000_000; i++) {
-      aead.seal(nonce, plaintext, ByteString.EMPTY);
+      aead.seal(nonce, plaintext, data);
     }
   }
 }

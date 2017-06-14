@@ -22,7 +22,6 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import okio.ByteString;
 import org.openjdk.jmh.Main;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -38,13 +37,14 @@ import org.openjdk.jmh.runner.RunnerException;
 @BenchmarkMode(Mode.AverageTime)
 public class Benchmarks {
 
-  private final ByteString key = ByteString.of(new byte[16]);
-  private final ByteString nonce = ByteString.of(new byte[12]);
-  private final ByteString plaintext = ByteString.of(new byte[1024]);
+  private final byte[] key = new byte[16];
+  private final byte[] nonce = new byte[12];
+  private final byte[] plaintext = new byte[1024];
+  private final byte[] data = new byte[0];
   private final AEAD aead = new AEAD(key);
 
-  private ByteString gcmCiphertext;
-  private ByteString sivCiphertext;
+  private byte[] gcmCiphertext;
+  private byte[] sivCiphertext;
 
   public static void main(String[] args) throws IOException, RunnerException {
     Main.main(args);
@@ -57,32 +57,32 @@ public class Benchmarks {
   }
 
   @Benchmark
-  public ByteString aes_GCM_SIV_Encrypt() {
-    return aead.seal(nonce, plaintext, ByteString.EMPTY);
+  public byte[] aes_GCM_SIV_Encrypt() {
+    return aead.seal(nonce, plaintext, data);
   }
 
   @Benchmark
-  public Optional<ByteString> aes_GCM_SIV_Decrypt() {
-    return aead.open(nonce, sivCiphertext, ByteString.EMPTY);
+  public Optional<byte[]> aes_GCM_SIV_Decrypt() {
+    return aead.open(nonce, sivCiphertext, data);
   }
 
   @Benchmark
-  public ByteString aes_GCM_Encrypt() throws Exception {
+  public byte[] aes_GCM_Encrypt() throws Exception {
     final Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-    final GCMParameterSpec gcmSpec = new GCMParameterSpec(128, nonce.toByteArray());
-    final SecretKeySpec keySpec = new SecretKeySpec(key.toByteArray(), "AES");
+    final GCMParameterSpec gcmSpec = new GCMParameterSpec(128, nonce);
+    final SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
     cipher.init(Cipher.ENCRYPT_MODE, keySpec, gcmSpec);
-    return ByteString.of(cipher.doFinal(plaintext.toByteArray()));
+    return cipher.doFinal(plaintext);
   }
 
   @Benchmark
-  public Optional<ByteString> aes_GCM_Decrypt() throws Exception {
+  public Optional<byte[]> aes_GCM_Decrypt() throws Exception {
     try {
       final Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-      final GCMParameterSpec gcmSpec = new GCMParameterSpec(128, nonce.toByteArray());
-      final SecretKeySpec keySpec = new SecretKeySpec(key.toByteArray(), "AES");
+      final GCMParameterSpec gcmSpec = new GCMParameterSpec(128, nonce);
+      final SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
       cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec);
-      return Optional.of(ByteString.of(cipher.doFinal(gcmCiphertext.toByteArray())));
+      return Optional.of(cipher.doFinal(gcmCiphertext));
     } catch (BadPaddingException e) {
       return Optional.empty();
     }

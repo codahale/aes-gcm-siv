@@ -25,8 +25,6 @@ import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 import javax.crypto.spec.SecretKeySpec;
-import okio.Buffer;
-import okio.ByteString;
 
 /**
  * An AES-GCM-SIV AEAD instance.
@@ -45,13 +43,13 @@ public class AEAD {
    *
    * @param key the secret key; must be 16 or 32 bytes long
    */
-  public AEAD(ByteString key) {
-    if (key.size() != 16 && key.size() != 32) {
+  public AEAD(byte[] key) {
+    if (key.length != 16 && key.length != 32) {
       throw new IllegalArgumentException("Key must be 16 or 32 bytes long");
     }
-    this.aes = newAES(key.toByteArray());
+    this.aes = newAES(key);
     this.random = new SecureRandom();
-    this.aes128 = key.size() == 16;
+    this.aes128 = key.length == 16;
   }
 
   /**
@@ -63,18 +61,17 @@ public class AEAD {
    * @return the encrypted message
    */
   @CheckReturnValue
-  public ByteString seal(ByteString nonce, ByteString plaintext, ByteString data) {
-    if (nonce.size() != 12) {
+  public byte[] seal(byte[] nonce, byte[] plaintext, byte[] data) {
+    if (nonce.length != 12) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
     }
-    final byte[] n = nonce.toByteArray();
-    final byte[] p = plaintext.toByteArray();
-    final byte[] d = data.toByteArray();
-    final byte[] authKey = subKey(0, 1, n);
-    final Cipher encAES = newAES(subKey(2, aes128 ? 3 : 5, n));
-    final byte[] tag = hash(encAES, authKey, n, p, d);
-    final byte[] ciphertext = aesCTR(encAES, tag, p);
-    return new Buffer().write(ciphertext).write(tag).readByteString();
+    final byte[] authKey = subKey(0, 1, nonce);
+    final Cipher encAES = newAES(subKey(2, aes128 ? 3 : 5, nonce));
+    final byte[] tag = hash(encAES, authKey, nonce, plaintext, data);
+    final byte[] output = new byte[plaintext.length + tag.length];
+    aesCTR(encAES, tag, plaintext, output);
+    System.arraycopy(tag, 0, output, plaintext.length, tag.length);
+    return output;
   }
 
   /**
@@ -86,40 +83,43 @@ public class AEAD {
    * @return the random nonce and the encrypted message
    */
   @CheckReturnValue
-  public ByteString seal(ByteString plaintext, ByteString data) {
+  public byte[] seal(byte[] plaintext, byte[] data) {
     final byte[] nonce = new byte[12];
     random.nextBytes(nonce);
 
-    return new Buffer().write(nonce)
-                       .write(seal(ByteString.of(nonce), plaintext, data))
-                       .readByteString();
+    final byte[] ciphertext = seal(nonce, plaintext, data);
+    final byte[] output = new byte[nonce.length + ciphertext.length];
+    System.arraycopy(nonce, 0, output, 0, nonce.length);
+    System.arraycopy(ciphertext, 0, output, nonce.length, ciphertext.length);
+    return output;
   }
 
   /**
    * Decrypts the given encrypted message.
    *
    * @param nonce the 12-byte random nonce used to encrypt the message
-   * @param ciphertext the returned value from {@link #seal(ByteString, ByteString, ByteString)}
+   * @param ciphertext the returned value from {@link #seal(byte[], byte[], byte[])}
    * @param data the authenticated data used to encrypt the message (may be empty)
    * @return the plaintext message
    */
   @CheckReturnValue
-  public Optional<ByteString> open(ByteString nonce, ByteString ciphertext, ByteString data) {
-    if (nonce.size() != 12) {
+  public Optional<byte[]> open(byte[] nonce, byte[] ciphertext, byte[] data) {
+    if (nonce.length != 12) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
     }
 
-    final byte[] n = nonce.toByteArray();
-    final byte[] c = ciphertext.substring(0, ciphertext.size() - 16).toByteArray();
-    final byte[] d = data.toByteArray();
-    final byte[] tag = ciphertext.substring(c.length, ciphertext.size()).toByteArray();
-    final byte[] authKey = subKey(0, 1, n);
-    final Cipher encAES = newAES(subKey(2, aes128 ? 3 : 5, n));
-    final byte[] plaintext = aesCTR(encAES, tag, c);
-    final byte[] actual = hash(encAES, authKey, n, plaintext, d);
+    final byte[] c = new byte[ciphertext.length - 16];
+    final byte[] tag = new byte[16];
+    System.arraycopy(ciphertext, 0, c, 0, c.length);
+    System.arraycopy(ciphertext, c.length, tag, 0, tag.length);
+
+    final byte[] authKey = subKey(0, 1, nonce);
+    final Cipher encAES = newAES(subKey(2, aes128 ? 3 : 5, nonce));
+    aesCTR(encAES, tag, c, c);
+    final byte[] actual = hash(encAES, authKey, nonce, c, data);
 
     if (MessageDigest.isEqual(tag, actual)) {
-      return Optional.of(ByteString.of(plaintext));
+      return Optional.of(c);
     }
     return Optional.empty();
   }
@@ -127,16 +127,22 @@ public class AEAD {
   /**
    * Decrypts the given encrypted message.
    *
-   * @param ciphertext the returned value from {@link #seal(ByteString, ByteString)}
+   * @param ciphertext the returned value from {@link #seal(byte[], byte[])}
    * @param data the authenticated data used to encrypt the message (may be empty)
    * @return the plaintext message
    */
   @CheckReturnValue
-  public Optional<ByteString> open(ByteString ciphertext, ByteString data) {
-    if (ciphertext.size() < 12) {
+  public Optional<byte[]> open(byte[] ciphertext, byte[] data) {
+    if (ciphertext.length < 12) {
       return Optional.empty();
     }
-    return open(ciphertext.substring(0, 12), ciphertext.substring(12), data);
+
+    final byte[] nonce = new byte[12];
+    final byte[] c = new byte[ciphertext.length - 12];
+    System.arraycopy(ciphertext, 0, nonce, 0, nonce.length);
+    System.arraycopy(ciphertext, nonce.length, c, 0, c.length);
+
+    return open(nonce, c, data);
   }
 
   private byte[] hash(Cipher aes, byte[] h, byte[] nonce, byte[] plaintext, byte[] data) {
@@ -190,10 +196,9 @@ public class AEAD {
     return out;
   }
 
-  private byte[] aesCTR(Cipher aes, byte[] tag, byte[] input) {
+  private void aesCTR(Cipher aes, byte[] tag, byte[] input, byte[] output) {
     final byte[] counter = Arrays.copyOf(tag, tag.length);
     counter[counter.length - 1] |= 0x80;
-    final byte[] out = new byte[input.length];
     final byte[] k = new byte[aes.getBlockSize()];
     for (int i = 0; i < input.length; i += 16) {
       // encrypt counter to produce keystream
@@ -207,7 +212,7 @@ public class AEAD {
       final int len = Math.min(16, input.length - i);
       for (int j = 0; j < len; j++) {
         final int idx = i + j;
-        out[idx] = (byte) (input[idx] ^ k[j]);
+        output[idx] = (byte) (input[idx] ^ k[j]);
       }
 
       // increment counter
@@ -216,7 +221,6 @@ public class AEAD {
         j++;
       }
     }
-    return out;
   }
 
   private Cipher newAES(byte[] key) {
