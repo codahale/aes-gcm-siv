@@ -34,6 +34,9 @@ import javax.crypto.spec.SecretKeySpec;
  */
 public class AEAD {
 
+  static final int AES_BLOCK_SIZE = 16;
+  private static final int NONCE_SIZE = 12;
+
   private final Cipher aes;
   private final SecureRandom random;
   private final boolean aes128;
@@ -62,7 +65,7 @@ public class AEAD {
    */
   @CheckReturnValue
   public byte[] seal(byte[] nonce, byte[] plaintext, byte[] data) {
-    if (nonce.length != 12) {
+    if (nonce.length != NONCE_SIZE) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
     }
     final byte[] authKey = subKey(0, 1, nonce);
@@ -84,7 +87,7 @@ public class AEAD {
    */
   @CheckReturnValue
   public byte[] seal(byte[] plaintext, byte[] data) {
-    final byte[] nonce = new byte[12];
+    final byte[] nonce = new byte[NONCE_SIZE];
     random.nextBytes(nonce);
 
     final byte[] ciphertext = seal(nonce, plaintext, data);
@@ -104,12 +107,12 @@ public class AEAD {
    */
   @CheckReturnValue
   public Optional<byte[]> open(byte[] nonce, byte[] ciphertext, byte[] data) {
-    if (nonce.length != 12) {
+    if (nonce.length != NONCE_SIZE) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
     }
 
-    final byte[] c = new byte[ciphertext.length - 16];
-    final byte[] tag = new byte[16];
+    final byte[] c = new byte[ciphertext.length - AES_BLOCK_SIZE];
+    final byte[] tag = new byte[AES_BLOCK_SIZE];
     System.arraycopy(ciphertext, 0, c, 0, c.length);
     System.arraycopy(ciphertext, c.length, tag, 0, tag.length);
 
@@ -133,12 +136,12 @@ public class AEAD {
    */
   @CheckReturnValue
   public Optional<byte[]> open(byte[] ciphertext, byte[] data) {
-    if (ciphertext.length < 12) {
+    if (ciphertext.length < NONCE_SIZE) {
       return Optional.empty();
     }
 
-    final byte[] nonce = new byte[12];
-    final byte[] c = new byte[ciphertext.length - 12];
+    final byte[] nonce = new byte[NONCE_SIZE];
+    final byte[] c = new byte[ciphertext.length - NONCE_SIZE];
     System.arraycopy(ciphertext, 0, nonce, 0, nonce.length);
     System.arraycopy(ciphertext, nonce.length, c, 0, c.length);
 
@@ -147,10 +150,10 @@ public class AEAD {
 
   private byte[] hash(Cipher aes, byte[] h, byte[] nonce, byte[] plaintext, byte[] data) {
     final Polyval polyval = new Polyval(h);
+    final byte[] in = new byte[AES_BLOCK_SIZE];
     final byte[] x = aeadBlock(plaintext, data);
-    final byte[] in = new byte[16];
-    for (int i = 0; i < x.length; i += 16) {
-      System.arraycopy(x, i, in, 0, 16);
+    for (int i = 0; i < x.length; i += AES_BLOCK_SIZE) {
+      System.arraycopy(x, i, in, 0, AES_BLOCK_SIZE);
       polyval.update(in);
     }
     final byte[] hash = polyval.digest();
@@ -169,21 +172,21 @@ public class AEAD {
   }
 
   private byte[] aeadBlock(byte[] plaintext, byte[] data) {
-    final int plaintextPad = (16 - (plaintext.length % 16)) % 16;
-    final int dataPad = (16 - (data.length % 16)) % 16;
-    final byte[] out = new byte[8 + 8 + plaintext.length + plaintextPad + data.length + dataPad];
+    final int pPad = (AES_BLOCK_SIZE - (plaintext.length % AES_BLOCK_SIZE)) % AES_BLOCK_SIZE;
+    final int dPad = (AES_BLOCK_SIZE - (data.length % AES_BLOCK_SIZE)) % AES_BLOCK_SIZE;
+    final byte[] out = new byte[8 + 8 + plaintext.length + pPad + data.length + dPad];
     System.arraycopy(data, 0, out, 0, data.length);
-    System.arraycopy(plaintext, 0, out, data.length + dataPad, plaintext.length);
+    System.arraycopy(plaintext, 0, out, data.length + dPad, plaintext.length);
     Bytes.putInt(data.length * 8, out, out.length - 16);
     Bytes.putInt(plaintext.length * 8, out, out.length - 8);
     return out;
   }
 
   private byte[] subKey(int ctrStart, int ctrEnd, byte[] nonce) {
-    final byte[] in = new byte[16];
+    final byte[] in = new byte[AES_BLOCK_SIZE];
     System.arraycopy(nonce, 0, in, in.length - nonce.length, nonce.length);
     final byte[] out = new byte[(ctrEnd - ctrStart + 1) * 8];
-    final byte[] x = new byte[16];
+    final byte[] x = new byte[AES_BLOCK_SIZE];
     for (int ctr = ctrStart; ctr <= ctrEnd; ctr++) {
       Bytes.putInt(ctr, in, 0);
       try {
@@ -199,8 +202,8 @@ public class AEAD {
   private void aesCTR(Cipher aes, byte[] tag, byte[] input, byte[] output) {
     final byte[] counter = Arrays.copyOf(tag, tag.length);
     counter[counter.length - 1] |= 0x80;
-    final byte[] k = new byte[aes.getBlockSize()];
-    for (int i = 0; i < input.length; i += 16) {
+    final byte[] k = new byte[AES_BLOCK_SIZE];
+    for (int i = 0; i < input.length; i += AES_BLOCK_SIZE) {
       // encrypt counter to produce keystream
       try {
         aes.update(counter, 0, counter.length, k, 0);
@@ -209,7 +212,7 @@ public class AEAD {
       }
 
       // xor input with keystream
-      final int len = Math.min(16, input.length - i);
+      final int len = Math.min(AES_BLOCK_SIZE, input.length - i);
       for (int j = 0; j < len; j++) {
         final int idx = i + j;
         output[idx] = (byte) (input[idx] ^ k[j]);
