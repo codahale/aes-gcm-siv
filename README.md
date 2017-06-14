@@ -25,7 +25,7 @@ Benchmarks.aes_GCM      avgt  200  22.104 ± 0.353  us/op
 Benchmarks.aes_GCM_SIV  avgt  200  23.401 ± 0.367  us/op
 ```
 
-## Ok then why's it good
+## Why's it good
 
 AES-GCM-SIV is a nonce-misuse resistant AEAD, which means it doesn't fail catastrophically if a
 nonce gets re-used. This is a concern for large systems which involve operations with a single key:
