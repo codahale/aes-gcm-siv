@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.4.1: 2017-06-15
+
+* Reduced allocation and copying for `POLYVAL` calculation.
+* Improved performance very slightly, but now on par with AES-GCM.
+
 ## v0.4.0: 2017-06-14
 
 * Moved to `byte[]`-based API.
