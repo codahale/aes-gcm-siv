@@ -17,15 +17,17 @@ algorithm described in
 It's very fast. AES-GCM-SIV's performance is largely dependent on hardware support for AES and GCM.
 Java 8 added AES-NI support, but only for AES-CBC, and Java 9 will improve GCM performance via
 `pclmulqdq` intrinsics, but only for AES-GCM. All things being equal, AES-GCM is slightly faster for
-encryption and slightly slower for decryption. My benchmarking on a `c4.xlarge` EC2 instance using
-Java 8 mirrors this:
+encryption and slightly slower for decryption. 
+
+Here's some benchmark results from a `c4.xlarge` EC2 instance using Java `1.8.0_131-b11`, comparing
+`AES/GCM/NoPadding` to AES-GCM-SIV:
 
 ```
 Benchmark                       Mode  Cnt   Score   Error  Units
-Benchmarks.aes_GCM_Decrypt      avgt  200  24.333 ± 0.014  us/op
-Benchmarks.aes_GCM_Encrypt      avgt  200  23.560 ± 0.011  us/op
-Benchmarks.aes_GCM_SIV_Decrypt  avgt  200  23.939 ± 0.019  us/op
-Benchmarks.aes_GCM_SIV_Encrypt  avgt  200  23.943 ± 0.020  us/op
+Benchmarks.aes_GCM_Decrypt      avgt  200  24.336 ± 0.026  us/op
+Benchmarks.aes_GCM_Encrypt      avgt  200  23.570 ± 0.008  us/op
+Benchmarks.aes_GCM_SIV_Decrypt  avgt  200  23.154 ± 0.012  us/op
+Benchmarks.aes_GCM_SIV_Encrypt  avgt  200  23.106 ± 0.015  us/op
 ```
 
 ## Why's it good

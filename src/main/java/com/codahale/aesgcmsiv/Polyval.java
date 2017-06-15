@@ -49,15 +49,28 @@ final class Polyval {
     this.h1 = ((v2 & 0xffffffffL) << 32) | v3 & 0xffffffffL;
   }
 
-  @SuppressWarnings("Duplicates")
   void update(byte[] b) {
+    final int extra = b.length % AEAD.AES_BLOCK_SIZE;
+    for (int i = 0; i < b.length - extra; i += AEAD.AES_BLOCK_SIZE) {
+      updateBlock(b, i);
+    }
+
+    if (extra != 0) {
+      final byte[] block = new byte[AEAD.AES_BLOCK_SIZE];
+      System.arraycopy(b, b.length - extra, block, 0, extra);
+      updateBlock(block, 0);
+    }
+  }
+
+  @SuppressWarnings("Duplicates")
+  void updateBlock(byte[] b, int offset) {
     long v0 = h0;
     long v1 = h1;
     long z0 = 0;
     long z1 = 0;
 
-    long x0 = s1 ^ Bytes.getLong(b, 0);
-    long x1 = s0 ^ Bytes.getLong(b, 8);
+    long x0 = s1 ^ Bytes.getLong(b, offset);
+    long x1 = s0 ^ Bytes.getLong(b, offset + 8);
 
     // breaking this up into two duplicate loops is faster
 

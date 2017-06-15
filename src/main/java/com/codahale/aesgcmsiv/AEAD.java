@@ -150,12 +150,14 @@ public class AEAD {
 
   private byte[] hash(Cipher aes, byte[] h, byte[] nonce, byte[] plaintext, byte[] data) {
     final Polyval polyval = new Polyval(h);
-    final byte[] in = new byte[AES_BLOCK_SIZE];
-    final byte[] x = aeadBlock(plaintext, data);
-    for (int i = 0; i < x.length; i += AES_BLOCK_SIZE) {
-      System.arraycopy(x, i, in, 0, AES_BLOCK_SIZE);
-      polyval.update(in);
-    }
+    polyval.update(data);
+    polyval.update(plaintext);
+
+    final byte[] lens = new byte[AES_BLOCK_SIZE];
+    Bytes.putLong(data.length * 8, lens, 0);
+    Bytes.putLong(plaintext.length * 8, lens, 8);
+    polyval.updateBlock(lens, 0);
+
     final byte[] hash = polyval.digest();
     for (int i = 0; i < nonce.length; i++) {
       hash[i] ^= nonce[i];
@@ -169,17 +171,6 @@ public class AEAD {
       throw new RuntimeException(e);
     }
     return hash;
-  }
-
-  private byte[] aeadBlock(byte[] plaintext, byte[] data) {
-    final int pPad = (AES_BLOCK_SIZE - (plaintext.length % AES_BLOCK_SIZE)) % AES_BLOCK_SIZE;
-    final int dPad = (AES_BLOCK_SIZE - (data.length % AES_BLOCK_SIZE)) % AES_BLOCK_SIZE;
-    final byte[] out = new byte[8 + 8 + plaintext.length + pPad + data.length + dPad];
-    System.arraycopy(data, 0, out, 0, data.length);
-    System.arraycopy(plaintext, 0, out, data.length + dPad, plaintext.length);
-    Bytes.putInt(data.length * 8, out, out.length - 16);
-    Bytes.putInt(plaintext.length * 8, out, out.length - 8);
-    return out;
   }
 
   private byte[] subKey(int ctrStart, int ctrEnd, byte[] nonce) {
