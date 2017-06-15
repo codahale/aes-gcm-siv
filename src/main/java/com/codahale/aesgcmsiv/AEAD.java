@@ -154,8 +154,8 @@ public class AEAD {
     polyval.update(plaintext);
 
     final byte[] lens = new byte[AES_BLOCK_SIZE];
-    Bytes.putLong(data.length * 8, lens, 0);
-    Bytes.putLong(plaintext.length * 8, lens, 8);
+    Bytes.putLong((long) data.length * 8, lens, 0);
+    Bytes.putLong((long) plaintext.length * 8, lens, 8);
     polyval.updateBlock(lens, 0);
 
     final byte[] hash = polyval.digest();
