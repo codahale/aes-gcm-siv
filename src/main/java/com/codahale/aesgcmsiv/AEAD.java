@@ -179,7 +179,7 @@ public class AEAD {
     final byte[] out = new byte[(ctrEnd - ctrStart + 1) * 8];
     final byte[] x = new byte[AES_BLOCK_SIZE];
     for (int ctr = ctrStart; ctr <= ctrEnd; ctr++) {
-      Bytes.putInt(ctr, in, 0);
+      Bytes.putInt(ctr, in);
       try {
         aes.update(in, 0, in.length, x, 0);
       } catch (ShortBufferException e) {

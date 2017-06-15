@@ -16,11 +16,11 @@ package com.codahale.aesgcmsiv;
 
 interface Bytes {
 
-  static void putInt(int n, byte[] b, int offset) {
-    b[offset] = (byte) (n);
-    b[++offset] = (byte) (n >> 8);
-    b[++offset] = (byte) (n >> 16);
-    b[++offset] = (byte) (n >> 24);
+  static void putInt(int n, byte[] b) {
+    b[0] = (byte) (n);
+    b[1] = (byte) (n >> 8);
+    b[2] = (byte) (n >> 16);
+    b[3] = (byte) (n >> 24);
   }
 
   static void putLong(long n, byte[] b, int offset) {
