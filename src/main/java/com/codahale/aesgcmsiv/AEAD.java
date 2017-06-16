@@ -150,27 +150,28 @@ public class AEAD {
 
   private byte[] hash(Cipher aes, byte[] h, byte[] nonce, byte[] plaintext, byte[] data) {
     final Polyval polyval = new Polyval(h);
-    polyval.update(data);
-    polyval.update(plaintext);
+    polyval.update(data); // hash data with padding
+    polyval.update(plaintext); // hash plaintext with padding
 
-    final byte[] lens = new byte[AES_BLOCK_SIZE];
-    Bytes.putLong((long) data.length * 8, lens, 0);
-    Bytes.putLong((long) plaintext.length * 8, lens, 8);
-    polyval.updateBlock(lens, 0);
+    // hash data and plaintext lengths in bits with padding
+    final byte[] block = new byte[AES_BLOCK_SIZE];
+    Bytes.putLong((long) data.length * 8, block, 0);
+    Bytes.putLong((long) plaintext.length * 8, block, 8);
+    polyval.updateBlock(block, 0);
 
-    final byte[] hash = polyval.digest();
+    polyval.digest(block);
     for (int i = 0; i < nonce.length; i++) {
-      hash[i] ^= nonce[i];
+      block[i] ^= nonce[i];
     }
-    hash[hash.length - 1] &= ~0x80;
+    block[block.length - 1] &= ~0x80;
 
     // encrypt polyval hash to produce tag
     try {
-      aes.update(hash, 0, hash.length, hash, 0);
+      aes.update(block, 0, block.length, block, 0);
     } catch (ShortBufferException e) {
       throw new RuntimeException(e);
     }
-    return hash;
+    return block;
   }
 
   private byte[] subKey(int ctrStart, int ctrEnd, byte[] nonce) {

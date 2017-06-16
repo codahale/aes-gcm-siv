@@ -103,11 +103,9 @@ final class Polyval {
     this.s1 = (z1 ^ (v1 & m));
   }
 
-  byte[] digest() {
-    byte[] d = new byte[AEAD.AES_BLOCK_SIZE];
+  void digest(byte[] d) {
     Bytes.putLong(s1, d, 0);
     Bytes.putLong(s0, d, 8);
-    return d;
   }
 }
 
