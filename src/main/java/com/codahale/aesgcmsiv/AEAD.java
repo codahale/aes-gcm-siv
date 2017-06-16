@@ -175,20 +175,20 @@ public class AEAD {
   }
 
   private byte[] subKey(int ctrStart, int ctrEnd, byte[] nonce) {
-    final byte[] in = new byte[AES_BLOCK_SIZE];
-    System.arraycopy(nonce, 0, in, in.length - nonce.length, nonce.length);
-    final byte[] out = new byte[(ctrEnd - ctrStart + 1) * 8];
-    final byte[] x = new byte[AES_BLOCK_SIZE];
-    for (int ctr = ctrStart; ctr <= ctrEnd; ctr++) {
-      Bytes.putInt(ctr, in);
+    final byte[] counter = new byte[AES_BLOCK_SIZE];
+    System.arraycopy(nonce, 0, counter, counter.length - nonce.length, nonce.length);
+    final byte[] key = new byte[(ctrEnd - ctrStart + 1) * 8];
+    final byte[] block = new byte[AES_BLOCK_SIZE];
+    for (int i = ctrStart; i <= ctrEnd; i++) {
+      Bytes.putInt(i, counter);
       try {
-        aes.update(in, 0, in.length, x, 0);
+        aes.update(counter, 0, AES_BLOCK_SIZE, block, 0);
       } catch (ShortBufferException e) {
         throw new RuntimeException(e);
       }
-      System.arraycopy(x, 0, out, (ctr - ctrStart) * 8, 8);
+      System.arraycopy(block, 0, key, (i - ctrStart) * 8, 8);
     }
-    return out;
+    return key;
   }
 
   private void aesCTR(Cipher aes, byte[] tag, byte[] input, byte[] output) {
