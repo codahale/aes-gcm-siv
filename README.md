@@ -3,14 +3,14 @@
 [![Build Status](https://secure.travis-ci.org/codahale/aes-gcm-siv.svg)](http://travis-ci.org/codahale/aes-gcm-siv)
 
 A Java implementation of [AES-GCM-SIV](https://eprint.iacr.org/2017/168) 
-([draft-irtf-cfrg-gcmsiv-05](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-05)), a
+([draft-irtf-cfrg-gcmsiv-06](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-06)), a
 nonce-misuse resistant Authenticated Encryption And Data (AEAD) algorithm.
 
 ## Is it ready
 
 No, AES-GCM-SIV is still in draft form and hasn't yet been standardized. This library implements the
 algorithm described in
-[draft-irtf-cfrg-gcmsiv-05](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-05).
+[draft-irtf-cfrg-gcmsiv-06](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-06).
 
 ## Is it fast
 

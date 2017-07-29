@@ -29,7 +29,7 @@ import javax.crypto.spec.SecretKeySpec;
 /**
  * An AES-GCM-SIV AEAD instance.
  *
- * @see <a href="https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-05">draft-irtf-cfrg-gcmsiv-05</a>
+ * @see <a href="https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-06">draft-irtf-cfrg-gcmsiv-06</a>
  * @see <a href="https://eprint.iacr.org/2017/168">AES-GCM-SIV: Specification and Analysis</a>
  */
 public class AEAD {
