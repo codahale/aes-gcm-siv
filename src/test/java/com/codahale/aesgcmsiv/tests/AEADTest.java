@@ -17,7 +17,6 @@ package com.codahale.aesgcmsiv.tests;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.quicktheories.quicktheories.QuickTheory.qt;
 
 import com.codahale.aesgcmsiv.AEAD;
 import java.security.InvalidKeyException;
@@ -32,18 +31,20 @@ import okio.ByteString;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
-import org.quicktheories.quicktheories.core.Source;
+import org.quicktheories.WithQuickTheories;
+import org.quicktheories.core.Gen;
+import org.quicktheories.impl.Constraint;
 
-class AEADTest {
+class AEADTest implements WithQuickTheories {
 
-  private static Source<byte[]> bytes(int minSize, int maxSize) {
-    return Source.of((prng, step) -> {
-      final byte[] bytes = new byte[prng.nextInt(minSize, maxSize)];
+  private Gen<byte[]> bytes(int minSize, int maxSize) {
+    return in -> {
+      final byte[] bytes = new byte[(int) in.next(Constraint.between(minSize, maxSize))];
       for (int i = 0; i < bytes.length; i++) {
-        bytes[i] = (byte) prng.nextInt(0, 255);
+        bytes[i] = (byte) in.next(Constraint.between(0, 255));
       }
       return bytes;
-    });
+    };
   }
 
   @ParameterizedTest
