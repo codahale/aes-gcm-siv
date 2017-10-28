@@ -45,8 +45,8 @@ final class Polyval {
     v3 = (b >>> 1) | c;
     v0 ^= (b << 31 >> 8 & E1);
 
-    this.h0 = ((v0 & 0xffffffffL) << 32) | v1 & 0xffffffffL;
-    this.h1 = ((v2 & 0xffffffffL) << 32) | v3 & 0xffffffffL;
+    this.h0 = ((v0 & 0xffffffffL) << 32) | (v1 & 0xffffffffL);
+    this.h1 = ((v2 & 0xffffffffL) << 32) | (v3 & 0xffffffffL);
   }
 
   void update(byte[] b) {

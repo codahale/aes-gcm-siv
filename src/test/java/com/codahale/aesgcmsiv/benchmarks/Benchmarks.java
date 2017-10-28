@@ -43,8 +43,8 @@ public class Benchmarks {
   private final byte[] data = new byte[0];
   private final AEAD aead = new AEAD(key);
 
-  private byte[] gcmCiphertext;
-  private byte[] sivCiphertext;
+  private byte[] gcmCiphertext = new byte[0];
+  private byte[] sivCiphertext = new byte[0];
 
   public static void main(String[] args) throws IOException, RunnerException {
     Main.main(args);

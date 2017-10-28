@@ -163,7 +163,7 @@ public class AEAD {
     for (int i = 0; i < nonce.length; i++) {
       block[i] ^= nonce[i];
     }
-    block[block.length - 1] &= ~0x80;
+    block[block.length - 1] &= (byte) ~0x80;
 
     // encrypt polyval hash to produce tag
     try {
@@ -193,7 +193,7 @@ public class AEAD {
 
   private void aesCTR(Cipher aes, byte[] tag, byte[] input, byte[] output) {
     final byte[] counter = Arrays.copyOf(tag, tag.length);
-    counter[counter.length - 1] |= 0x80;
+    counter[counter.length - 1] |= (byte) 0x80;
     final byte[] k = new byte[AES_BLOCK_SIZE];
     for (int i = 0; i < input.length; i += AES_BLOCK_SIZE) {
       // encrypt counter to produce keystream

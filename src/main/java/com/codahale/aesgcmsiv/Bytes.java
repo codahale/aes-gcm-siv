@@ -55,6 +55,6 @@ interface Bytes {
     hi |= (b[++offset] & 0xff) << 16;
     hi |= b[++offset] << 24;
 
-    return ((hi & 0xffffffffL) << 32) | lo & 0xffffffffL;
+    return ((hi & 0xffffffffL) << 32) | (lo & 0xffffffffL);
   }
 }
