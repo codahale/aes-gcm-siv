@@ -13,14 +13,12 @@
   ~ limitations under the License.
   -->
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns="http://maven.apache.org/POM/4.0.0"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.codahale</groupId>
   <artifactId>aes-gcm-siv</artifactId>
-  <version>0.4.2-SNAPSHOT</version>
+  <version>0.4.2</version>
 
   <name>AES-GCM-SIV</name>
   <url>https://github.com/codahale/aes-gcm-siv</url>
@@ -38,7 +36,7 @@
     <connection>scm:git:https://github.com/codahale/aes-gcm-siv.git</connection>
     <developerConnection>scm:git:https://github.com/codahale/aes-gcm-siv.git</developerConnection>
     <url>https://github.com/codahale/aes-gcm-siv</url>
-    <tag>HEAD</tag>
+    <tag>v0.4.2</tag>
   </scm>
   <developers>
     <developer>
@@ -310,7 +308,7 @@
             <id>enforce</id>
             <configuration>
               <rules>
-                <requireUpperBoundDeps/>
+                <requireUpperBoundDeps />
               </rules>
             </configuration>
             <goals>
@@ -335,7 +333,7 @@
           <executable>java</executable>
           <arguments>
             <argument>-classpath</argument>
-            <classpath/>
+            <classpath />
             <argument>com.codahale.aesgcmsiv.benchmarks.Benchmarks</argument>
           </arguments>
         </configuration>
