@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.4.2: 2017-10-28
+
+* Improved buffer reuse.
+* Internal refactorings.
+
 ## v0.4.1: 2017-06-15
 
 * Reduced allocation and copying for `POLYVAL` calculation.
