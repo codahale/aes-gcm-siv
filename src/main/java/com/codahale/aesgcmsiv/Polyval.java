@@ -108,4 +108,3 @@ final class Polyval {
     Bytes.putLong(s0, d, 8);
   }
 }
-

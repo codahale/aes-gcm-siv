@@ -48,13 +48,15 @@ class AEADTest implements WithQuickTheories {
   }
 
   @ParameterizedTest
-  @CsvFileSource(resources = {
+  @CsvFileSource(
+    resources = {
       "/8_Worked_example.csv",
       // all test vectors from Appendix C
       "/C1_AEAD_AES_128_GCM_SIV.csv",
       "/C2_AEAD_AES_256_GCM_SIV.csv",
       "/C3_Counter_wrap_tests.csv"
-  })
+    }
+  )
   void matchTestVectors(String k, String n, @Nullable String p, @Nullable String d, String c)
       throws NoSuchAlgorithmException, NoSuchPaddingException {
     final byte[] key = ByteString.decodeHex(k).toByteArray();
@@ -75,8 +77,7 @@ class AEADTest implements WithQuickTheories {
     assertArrayEquals(plaintext, p2.get());
   }
 
-  private boolean isValidKey(byte[] key)
-      throws NoSuchPaddingException, NoSuchAlgorithmException {
+  private boolean isValidKey(byte[] key) throws NoSuchPaddingException, NoSuchAlgorithmException {
     try {
       final Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
       cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"));
@@ -89,24 +90,26 @@ class AEADTest implements WithQuickTheories {
   @Test
   void roundTrip() throws Exception {
     qt().forAll(bytes(16, 16), bytes(12, 12), bytes(0, 1024), bytes(0, 1024))
-        .check((key, nonce, plaintext, data) -> {
-          final AEAD aead = new AEAD(key);
-          final byte[] ciphertext = aead.seal(nonce, plaintext, data);
-          final Optional<byte[]> message = aead.open(nonce, ciphertext, data);
+        .check(
+            (key, nonce, plaintext, data) -> {
+              final AEAD aead = new AEAD(key);
+              final byte[] ciphertext = aead.seal(nonce, plaintext, data);
+              final Optional<byte[]> message = aead.open(nonce, ciphertext, data);
 
-          return message.isPresent() && Arrays.equals(plaintext, message.get());
-        });
+              return message.isPresent() && Arrays.equals(plaintext, message.get());
+            });
   }
 
   @Test
   void simpleRoundTrip() throws Exception {
     qt().forAll(bytes(16, 16), bytes(0, 1024), bytes(0, 1024))
-        .check((key, plaintext, data) -> {
-          final AEAD aead = new AEAD(key);
-          final byte[] ciphertext = aead.seal(plaintext, data);
-          final Optional<byte[]> message = aead.open(ciphertext, data);
+        .check(
+            (key, plaintext, data) -> {
+              final AEAD aead = new AEAD(key);
+              final byte[] ciphertext = aead.seal(plaintext, data);
+              final Optional<byte[]> message = aead.open(ciphertext, data);
 
-          return message.isPresent() && Arrays.equals(plaintext, message.get());
-        });
+              return message.isPresent() && Arrays.equals(plaintext, message.get());
+            });
   }
 }
