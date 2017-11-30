@@ -170,7 +170,7 @@ public class AEAD {
     try {
       aes.update(block, 0, block.length, block, 0);
     } catch (ShortBufferException e) {
-      throw new RuntimeException(e);
+      throw new IllegalStateException(e);
     }
     return block;
   }
@@ -185,7 +185,7 @@ public class AEAD {
       try {
         aes.update(counter, 0, AES_BLOCK_SIZE, block, 0);
       } catch (ShortBufferException e) {
-        throw new RuntimeException(e);
+        throw new IllegalStateException(e);
       }
       System.arraycopy(block, 0, key, (i - ctrStart) * 8, 8);
     }
@@ -201,7 +201,7 @@ public class AEAD {
       try {
         aes.update(counter, 0, counter.length, k, 0);
       } catch (ShortBufferException e) {
-        throw new RuntimeException(e);
+        throw new IllegalStateException(e);
       }
 
       // xor input with keystream
@@ -221,11 +221,11 @@ public class AEAD {
 
   private Cipher newAES(byte[] key) {
     try {
-      final Cipher aes = Cipher.getInstance("AES/ECB/NoPadding");
-      aes.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"));
-      return aes;
+      final Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
+      cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"));
+      return cipher;
     } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
-      throw new RuntimeException(e);
+      throw new IllegalStateException(e);
     }
   }
 }

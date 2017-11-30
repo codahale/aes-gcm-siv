@@ -88,7 +88,7 @@ class AEADTest implements WithQuickTheories {
   }
 
   @Test
-  void roundTrip() throws Exception {
+  void roundTrip() {
     qt().forAll(bytes(16, 16), bytes(12, 12), bytes(0, 1024), bytes(0, 1024))
         .check(
             (key, nonce, plaintext, data) -> {
@@ -101,7 +101,7 @@ class AEADTest implements WithQuickTheories {
   }
 
   @Test
-  void simpleRoundTrip() throws Exception {
+  void simpleRoundTrip() {
     qt().forAll(bytes(16, 16), bytes(0, 1024), bytes(0, 1024))
         .check(
             (key, plaintext, data) -> {
