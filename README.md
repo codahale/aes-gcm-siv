@@ -3,14 +3,14 @@
 [![Build Status](https://secure.travis-ci.org/codahale/aes-gcm-siv.svg)](http://travis-ci.org/codahale/aes-gcm-siv)
 
 A Java implementation of [AES-GCM-SIV](https://eprint.iacr.org/2017/168) 
-([draft-irtf-cfrg-gcmsiv-07](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-07)), a
+([draft-irtf-cfrg-gcmsiv-08](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-08)), a
 nonce-misuse resistant Authenticated Encryption And Data (AEAD) algorithm.
 
 ## Is it ready
 
 No, AES-GCM-SIV is still in draft form and hasn't yet been standardized. This library implements the
 algorithm described in
-[draft-irtf-cfrg-gcmsiv-07](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-07).
+[draft-irtf-cfrg-gcmsiv-08](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-08).
 
 ## Is it fast
 
@@ -78,7 +78,35 @@ with the same key, and where nonce repetition is a real threat. In such cases, i
 enjoy the better bounds available for encryption schemes that utilize state to ensure unique nonces
 in every encryption.
 
-(quotes from ["AES-GCM-SIV: Specification and Analysis"](https://eprint.iacr.org/2017/168))
+(from ["AES-GCM-SIV: Specification and Analysis"](https://eprint.iacr.org/2017/168))
+
+That said, you should still use randomly generated nonces:
+
+> We stress that nonce-misuse resistant schemes guarantee that if a nonce repeats then the only
+security loss is that identical plaintexts will produce identical ciphertexts.  Since this can also
+be a concern (as the fact that the same plaintext has been encrypted twice is revealed), we do not
+recommend using a fixed nonce as a policy.  In addition, as we show below, better-than-birthday
+bounds are achieved by AES-GCM-SIV when nonces repetition is low.  Finally, as shown in [[BHT18]],
+there is a great security benefit in the multi- user/multi-key setting when each particular nonce is
+re-used by a small number of users only.  We stress that nonce-misuse resistance was never intended
+to be used with intentional nonce-reuse; rather, such schemes provide the best possible security in
+the event of nonce reuse.  Due to all of the above, it is RECOMMENDED that nonces be randomly
+generated.
+> 
+> Some example usage bounds for AES-GCM-SIV are given below (for these
+bounds, the adversary's advantage is always below 2^-32).  For up to
+256 repeats of a nonce (i.e., where one can assume that nonce misuse
+is no more than this bound), the following message limits should be
+respected (this assumes a short AAD):
+>   
+> * 2^29 messages, where each plaintext is at most 1GiB
+> * 2^35 messages, where each plaintext is at most 128MiB
+> * 2^49 messages, where each plaintext is at most 1MiB
+> * 2^61 messages, where each plaintext is at most 16KiB
+
+[BHT18]: https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-08#ref-BHT18
+
+(from [draft-irtf-cfrg-gcmsiv-08](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-08))
 
 ## Add to your project
 
