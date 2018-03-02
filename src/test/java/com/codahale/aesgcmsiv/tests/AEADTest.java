@@ -16,23 +16,27 @@
 package com.codahale.aesgcmsiv.tests;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.codahale.aesgcmsiv.AEAD;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Stream;
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 import okio.ByteString;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.quicktheories.WithQuickTheories;
 import org.quicktheories.core.Gen;
 import org.quicktheories.impl.Constraint;
 
-public class AEADTest implements WithQuickTheories {
+class AEADTest implements WithQuickTheories {
 
   private Gen<byte[]> bytes(int minSize, int maxSize) {
     return in -> {
@@ -410,38 +414,38 @@ public class AEADTest implements WithQuickTheories {
     }
   };
 
-  @Test
-  public void matchAllTestVectors() throws NoSuchAlgorithmException, NoSuchPaddingException {
-    for (String[] vector : TEST_VECTORS) {
-      final byte[] key = ByteString.decodeHex(vector[0]).toByteArray();
-      final byte[] nonce = ByteString.decodeHex(vector[1]).toByteArray();
-      final byte[] plaintext = ByteString.decodeHex(vector[2]).toByteArray();
-      final byte[] data = ByteString.decodeHex(vector[3]).toByteArray();
-      final byte[] ciphertext = ByteString.decodeHex(vector[4]).toByteArray();
-
-      assumeTrue(String.format("AES-%d is not supported", key.length * 8), isValidKey(key));
-
-      final AEAD aead = new AEAD(key);
-      final byte[] c2 = aead.seal(nonce, plaintext, data);
-      assertThat(c2).isEqualTo(ciphertext);
-
-      final Optional<byte[]> p2 = aead.open(nonce, c2, data);
-      assertThat(p2).contains(plaintext);
-    }
+  private static Stream<Arguments> testVectors() {
+    return Stream.of(TEST_VECTORS)
+        .map(Stream::of)
+        .map(v -> v.map(s -> ByteString.decodeHex(s).toByteArray()).toArray())
+        .map(Arguments::of);
   }
 
-  private boolean isValidKey(byte[] key) throws NoSuchPaddingException, NoSuchAlgorithmException {
+  @ParameterizedTest
+  @MethodSource("testVectors")
+  void matchTestVector(byte[] key, byte[] nonce, byte[] plaintext, byte[] data, byte[] ciphertext) {
+    assumeTrue(isValidKey(key), String.format("AES-%d is not supported", key.length * 8));
+
+    final AEAD aead = new AEAD(key);
+    final byte[] c2 = aead.seal(nonce, plaintext, data);
+    assertThat(c2).isEqualTo(ciphertext);
+
+    final Optional<byte[]> p2 = aead.open(nonce, c2, data);
+    assertThat(p2).contains(plaintext);
+  }
+
+  private boolean isValidKey(byte[] key) {
     try {
       final Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
       cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"));
       return true;
-    } catch (InvalidKeyException e) {
+    } catch (InvalidKeyException | NoSuchPaddingException | NoSuchAlgorithmException e) {
       return false;
     }
   }
 
   @Test
-  public void roundTrip() {
+  void roundTrip() {
     qt().forAll(bytes(16, 16), bytes(12, 12), bytes(0, 1024), bytes(0, 1024))
         .check(
             (key, nonce, plaintext, data) -> {
@@ -454,7 +458,7 @@ public class AEADTest implements WithQuickTheories {
   }
 
   @Test
-  public void simpleRoundTrip() {
+  void simpleRoundTrip() {
     qt().forAll(bytes(16, 16), bytes(0, 1024), bytes(0, 1024))
         .check(
             (key, plaintext, data) -> {
