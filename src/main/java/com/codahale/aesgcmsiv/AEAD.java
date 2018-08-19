@@ -21,7 +21,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Optional;
-import javax.annotation.CheckReturnValue;
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
@@ -65,7 +64,6 @@ public class AEAD {
    * @param data authenticated data (may be empty)
    * @return the encrypted message
    */
-  @CheckReturnValue
   public byte[] seal(byte[] nonce, byte[] plaintext, byte[] data) {
     if (nonce.length != NONCE_SIZE) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
@@ -87,7 +85,6 @@ public class AEAD {
    * @param data authenticated data (may be empty)
    * @return the random nonce and the encrypted message
    */
-  @CheckReturnValue
   public byte[] seal(byte[] plaintext, byte[] data) {
     final byte[] nonce = new byte[NONCE_SIZE];
     random.nextBytes(nonce);
@@ -107,7 +104,6 @@ public class AEAD {
    * @param data the authenticated data used to encrypt the message (may be empty)
    * @return the plaintext message
    */
-  @CheckReturnValue
   public Optional<byte[]> open(byte[] nonce, byte[] ciphertext, byte[] data) {
     if (nonce.length != NONCE_SIZE) {
       throw new IllegalArgumentException("Nonce must be 12 bytes long");
@@ -136,7 +132,6 @@ public class AEAD {
    * @param data the authenticated data used to encrypt the message (may be empty)
    * @return the plaintext message
    */
-  @CheckReturnValue
   public Optional<byte[]> open(byte[] ciphertext, byte[] data) {
     if (ciphertext.length < NONCE_SIZE) {
       return Optional.empty();
