@@ -19,15 +19,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.codahale.aesgcmsiv.AEAD;
+import com.google.common.io.BaseEncoding;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Stream;
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
-import okio.ByteString;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -417,7 +418,11 @@ class AEADTest implements WithQuickTheories {
   private static Stream<Arguments> testVectors() {
     return Stream.of(TEST_VECTORS)
         .map(Stream::of)
-        .map(v -> v.map(s -> ByteString.decodeHex(s).toByteArray()).toArray())
+        .map(
+            v ->
+                v.map(s -> s.toUpperCase(Locale.ENGLISH))
+                    .map(BaseEncoding.base16()::decode)
+                    .toArray())
         .map(Arguments::of);
   }
 
