@@ -1,6 +1,6 @@
 # AES-GCM-SIV
 
-[![Build Status](https://secure.travis-ci.org/codahale/aes-gcm-siv.svg)](http://travis-ci.org/codahale/aes-gcm-siv)
+[![CircleCI](https://circleci.com/gh/codahale/aes-gcm-siv.svg?style=svg)](https://circleci.com/gh/codahale/aes-gcm-siv)
 
 A Java implementation of [AES-GCM-SIV](https://eprint.iacr.org/2017/168) 
 ([draft-irtf-cfrg-gcmsiv-08](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-08)), a
