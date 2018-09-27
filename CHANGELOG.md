@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.4.3: 2018-09-26
+
+* Remove JSR-305 annotations.
+* Add automatic module name.
+
 ## v0.4.2: 2017-10-28
 
 * Improved buffer reuse.

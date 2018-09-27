@@ -114,9 +114,11 @@ respected (this assumes a short AAD):
 <dependency>
   <groupId>com.codahale</groupId>
   <artifactId>aes-gcm-siv</artifactId>
-  <version>0.4.2</version>
+  <version>0.4.3</version>
 </dependency>
 ```
+
+*Note: module name for Java 9+ is `com.codahale.aesgcmsiv`.*
 
 ## Use the thing
 
