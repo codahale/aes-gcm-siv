@@ -29,12 +29,11 @@ jobs:
           - v1-dependencies-{{ checksum "pom.xml" }}
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
-      - run: mvn dependency:go-offline
+      - run: mvn verify
       - save_cache:
           paths:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
-      - run: mvn verify
       - run:
           name: Save test results
           command: |
