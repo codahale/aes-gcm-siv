@@ -25,7 +25,7 @@
   </parent>
 
   <artifactId>aes-gcm-siv</artifactId>
-  <version>0.4.3-SNAPSHOT</version>
+  <version>0.4.3</version>
   <name>AES-GCM-SIV</name>
   <url>https://github.com/codahale/aes-gcm-siv</url>
   <description>
@@ -37,7 +37,7 @@
     <connection>scm:git:https://github.com/codahale/aes-gcm-siv.git</connection>
     <developerConnection>scm:git:https://github.com/codahale/aes-gcm-siv.git</developerConnection>
     <url>https://github.com/codahale/aes-gcm-siv</url>
-    <tag>HEAD</tag>
+    <tag>v0.4.3</tag>
   </scm>
 
   <dependencies>
