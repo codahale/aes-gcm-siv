@@ -40,6 +40,16 @@ Benchmarks.aes_GCM_SIV_Decrypt  avgt  200  23.439 ± 1.991  us/op
 Benchmarks.aes_GCM_SIV_Encrypt  avgt  200  24.462 ± 0.196  us/op
 ```
 
+Java 11's further optimizations make it roughly 4x faster (`11+28`):
+
+```
+Benchmark                       Mode  Cnt   Score   Error  Units
+Benchmarks.aes_GCM_Decrypt      avgt    5   5.987 ± 0.272  us/op
+Benchmarks.aes_GCM_Encrypt      avgt    5   5.876 ± 0.726  us/op
+Benchmarks.aes_GCM_SIV_Decrypt  avgt    5  20.871 ± 3.363  us/op
+Benchmarks.aes_GCM_SIV_Encrypt  avgt    5  19.970 ± 1.719  us/op
+```
+
 ## Why's it good
 
 AES-GCM-SIV is a nonce-misuse resistant AEAD, which means it doesn't fail catastrophically if a
