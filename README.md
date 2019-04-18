@@ -2,15 +2,13 @@
 
 [![CircleCI](https://circleci.com/gh/codahale/aes-gcm-siv.svg?style=svg)](https://circleci.com/gh/codahale/aes-gcm-siv)
 
-A Java implementation of [AES-GCM-SIV](https://eprint.iacr.org/2017/168) 
-([draft-irtf-cfrg-gcmsiv-08](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-08)), a
-nonce-misuse resistant Authenticated Encryption And Data (AEAD) algorithm.
+A Java implementation of [AES-GCM-SIV](https://eprint.iacr.org/2017/168) ([RFC
+8452](https://tools.ietf.org/html/rfc8452)), a nonce-misuse resistant Authenticated Encryption And
+Data (AEAD) algorithm.
 
 ## Is it ready
 
-No, AES-GCM-SIV is still in draft form and hasn't yet been standardized. This library implements the
-algorithm described in
-[draft-irtf-cfrg-gcmsiv-08](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-08).
+Yes, it is ready. It's an IETF standard mode.
 
 ## Is it fast
 
@@ -114,9 +112,9 @@ respected (this assumes a short AAD):
 > * 2^49 messages, where each plaintext is at most 1MiB
 > * 2^61 messages, where each plaintext is at most 16KiB
 
-[BHT18]: https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-08#ref-BHT18
+[BHT18]: https://tools.ietf.org/html/rfc8452#ref-BHT18
 
-(from [draft-irtf-cfrg-gcmsiv-08](https://tools.ietf.org/html/draft-irtf-cfrg-gcmsiv-08))
+(from [RFC 8452](https://tools.ietf.org/html/rfc8452))
 
 ## Add to your project
 
